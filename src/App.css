@@ -40,8 +40,12 @@ h1, p {
 }
 .inputWindow{
   text-align: center;
-}
+  }
+
 .middleWindow{
+  text-align: center;
+}
+.footer{
   text-align: center;
 }
 .App > * {

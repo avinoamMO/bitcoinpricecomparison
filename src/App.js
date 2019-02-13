@@ -10,13 +10,43 @@ import Footer from './components/footer'
 import './App.css';
 
 export default class App extends Component {
-  handleUserRequest(){
-    alert("I'm on it")
+  constructor(){
+    super()
+    this.state = {
+                    actionType :null,
+                    sum: null,
+                    acceptConditions : null,
+                    lastTimeUpdatedFromServer : null, // TODO: make this load a timestamp each time the server is updated
+                    lastTimeRequestedByUser : null
+
+    }
+  }
+  
+  handleActionTypeChange= (e)=>{
+    this.setState({actionType: e.target.value})
+    
+  }
+  handleSumChange=(e)=>{
+    this.setState({sum: e.target.value})
+  }
+  handleAcceptConditionsChange=(e)=>{
+    
+    this.setState({acceptConditions: e.target.checked})
+  }
+  handleResearchRequestFromUser=()=>{
+    var today = new Date();
+    var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    this.setState({lastTimeRequestedByUser: time})
   }
   render() {
     return (
       <div className="App">
-      <InputWindow/>
+      <InputWindow 
+      actionTypeChange= {this.handleActionTypeChange}
+      sumChange={this.handleSumChange}
+      acceptConditionsChange= {this.handleAcceptConditionsChange}
+      researchRequestFromUser={this.handleResearchRequestFromUser}
+      />
       <MiddleWindow/>
       <GraphWindow/>
       <Footer/>
