@@ -1,32 +1,70 @@
+*, *:before, *:after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 40px;
+  font-family: 'Open Sans', 'sans-serif';
+  background-color: #fff;
+  color: #444;
+}
+
+h1, p {
+  margin: 0 0 1em 0;
+}
+
+/* no grid support? */
+.inputWindow {
+  float: left;
+  width: 19.1489%;
+}
+
+.content {
+  float: right;
+  width: 79.7872%;
+}
+
+/* make a grid */
 .App {
+  max-width: 940px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 3fr;
+  grid-gap: 20px;
+}
+
+.graphWindow{
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+
+}
+.inputWindow{
   text-align: center;
 }
-
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 40vmin;
+.middleWindow{
+  text-align: center;
+}
+.App > * {
+  background-color: #444;
+  color: #fff;
+  border-radius: 5px;
+  padding: 20px;
+  font-size: 150%;
+  /* needed for the floated layout*/
+  margin-bottom: 10px;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.header, .footer {
+  grid-column: 1 / -1;
+  /* needed for the floated layout */
+  clear: both;
 }
 
-.App-link {
-  color: #61dafb;
-}
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+/* We need to set the widths used on floated items back to auto, and remove the bottom margin as when we have grid we have gaps. */
+@supports (display: grid) {
+  .App > * {
+    width: auto;
+    margin: 0;
   }
 }

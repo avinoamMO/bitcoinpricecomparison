@@ -1,29 +1,39 @@
-// data source: https://bit2c.co.il/Exchanges/BtcNis/orderbook.json
-// data source: https://bit2c.co.il/Exchanges/BtcNis/Ticker.json
+const express = require("express")
+const request = require('request');
+const router = express.Router()
 
-export default class Bit2C { 
 
-    getTicker =async()=>{
+const getOrderBook = async function(){
+        const options = {  
+            url: `https://bit2c.co.il/Exchanges/BtcNis/orderbook.json`,
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Accept-Charset': 'utf-8'
+            }
+        };
+        
+        request(options.url, async function(err, res, body) {  
+            let json = await JSON.parse(body);
+            return (json);
+        });   
     }
 
-    getAsks= async() =>{
+const getTicker = function(){
 
-    }
+        const options = {  
+            url: `https://bit2c.co.il/Exchanges/BtcNis/Ticker.json`,
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Accept-Charset': 'utf-8'
+            }
+        };
+        
+        request(options, function(err, res, body) {  
+            let json = JSON.parse(body);
+            return(json)    
+        });   
+    }       
 
-    getBids = async () =>{
-
-    }
-
-    getReturnForBitcoinBuy = async () =>{
-
-    }
-
-    getReturnForBitcoinBuy = async () =>{
-
-    }
-
-    getCommissions = async () => {
-
-    }
-}
-
+    module.exports = getOrderBook, getTicker;
