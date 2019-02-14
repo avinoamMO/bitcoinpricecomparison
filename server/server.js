@@ -20,6 +20,7 @@ app.use(function (req, res, next) {
     next()
   })
 
+  setInterval(fetchDataAndUpdateDb(),300000)
 
   app.use("/", api)
   

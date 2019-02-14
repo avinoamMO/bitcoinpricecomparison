@@ -59,6 +59,7 @@ export default class comparisonBarChart extends Component {
         </Bar>
       </BarChart>
          </ResponsiveContainer>
+         
 
       </span>
     );

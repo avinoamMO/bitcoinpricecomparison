@@ -33,9 +33,12 @@ h1, p {
   grid-gap: 20px;
 }
 
+.BarChart{
+  align-content: center;
+}
 .graphWindow{
-  display: grid;
-  grid-template-columns: 1fr 2fr;
+  text-align: center;
+  align-content: center;
 
 }
 .inputWindow{
@@ -45,6 +48,7 @@ h1, p {
 .middleWindow{
   text-align: center;
 }
+
 .footer{
   text-align: center;
 }

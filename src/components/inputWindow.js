@@ -7,8 +7,8 @@ export default class InputWindow extends Component {
             Select desired action:
             <select onClick={this.props.actionTypeChange}>
                 <option value="null">Buy or Sell?</option>
-                <option value="buy">Buy</option>
-                <option value="sell">Sell</option>
+                <option value="buy">Buy Bitcoin</option>
+                <option value="sell">Sell Bitcoin</option>
             </select>
             <p/>
             Select amount: 
