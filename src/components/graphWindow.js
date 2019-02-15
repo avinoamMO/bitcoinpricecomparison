@@ -8,8 +8,8 @@ export default class GraphWindow extends Component {
       <div className="graphWindow">
         <center>
           <ComparisonBarChart />
-          <button>+</button>
-          <button>-</button>
+          <button onClick={this.props.incrementSumUp}>+</button>
+          <button onClick={this.props.incrementSumDown}>-</button>
         </center>
       </div>
     );

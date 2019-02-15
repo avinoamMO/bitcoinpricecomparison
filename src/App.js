@@ -38,10 +38,12 @@ export default class App extends Component {
   };
 
   handleIncrementSumUp = () =>{
-
+    var newSum = parseInt(this.state.sum) + 100
+    this.setState({sum: newSum})
   }
   handleIncrementSumDown = () =>{
-
+    var newSum = parseInt(this.state.sum) - 100
+    this.setState({sum: newSum})
   }
 
   render() {
