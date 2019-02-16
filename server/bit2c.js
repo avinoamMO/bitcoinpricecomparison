@@ -4,11 +4,11 @@ on a peer-to-peer exchange platform.
 Input: 
 (1) Orderbook
 (2) Desired sum for purchase
+
 Output: 
 (1) The aggregated expected return in Bitcoins (or fractions of Bitcoins)
-(2) The total many that would have been spent in fiat currency
-(3) An object with an array of the orders executed fully
-(4) An object with an array of the orders executed partially with the percent of the order that has been executed
+(2) The total sum that would have been spent in fiat currency
+
 
 */
 let Bit2CBook = {
@@ -39,27 +39,29 @@ let Bit2CBook = {
 };
 
 getROIfromMarketBuyOrder = (orderBook, sumForPurchaseInNis) => {
-  let sumLeftInNis = sumForPurchaseInNis;
-  let aggregatedReturnInBtc = 0;
-  let ordersExecutedFully = { orders: [], num: 0 };
-  let ordersExecutedPartially = { orders: [], num: 0 };
-
+    let ordersExecutedFully = { orders: [], num: 0 };
+    let ordersExecutedPartially = { orders: [], num: 0 };
+    
+    let sumLeftInNis = sumForPurchaseInNis;
+    let aggregatedReturnInCrypto = 0;
+  
+    while(orderBook.asks.length>0 && sumLeftInNis>0){
   for (order of orderBook.asks) {
     // TODO make sure array is sorted
     let orderRate = order[0];
-    let orderQuantityInBtc = order[1];
-    OrderValueInNis = orderRate * orderQuantityInBtc;
+    let orderQuantityInCrypto = order[1];
+    OrderValueInNis = orderRate * orderQuantityInCrypto;
 
     if (sumLeftInNis >= OrderValueInNis) {
       sumLeftInNis -= OrderValueInNis;
-      aggregatedReturnInBtc += orderQuantityInBtc;
+      aggregatedReturnInCrypto += orderQuantityInCrypto;
       ordersExecutedFully.orders.push(order[0], order[1], order[2], 100);
       ordersExecutedFully.num++;
     }
     if (sumLeftInNis < OrderValueInNis && sumLeftInNis > 0) {
       percentsOfOrderUserCanAfford = (sumLeftInNis * 100) / orderRate;
-      aggregatedReturnInBtc +=
-        (percentsOfOrderUserCanAfford / 100) * orderQuantityInBtc;
+      aggregatedReturnInCrypto +=
+        (percentsOfOrderUserCanAfford / 100) * orderQuantityInCrypto;
       sumLeftInNis -= (percentsOfOrderUserCanAfford / 100) * OrderValueInNis;
       ordersExecutedPartially.orders.push(
         order[0],
@@ -72,7 +74,7 @@ getROIfromMarketBuyOrder = (orderBook, sumForPurchaseInNis) => {
     if (sumLeftInNis === 0 || orderBook.asks.length === 0) {
       console.log("finishing up here");
       return {
-        aggregatedReturnInBtc,
+        aggregatedReturnInCrypto,
         sumForPurchaseInNis,
         ordersExecutedFully,
         ordersExecutedPartially
@@ -80,5 +82,8 @@ getROIfromMarketBuyOrder = (orderBook, sumForPurchaseInNis) => {
     }
   }
 };
-let temp = getROIfromMarketBuyOrder(Bit2CBook, 10000);
+}
+let temp = getROIfromMarketBuyOrder(Bit2CBook, 500);
 console.log(temp);
+console.log(temp.ordersExecutedFully.orders)
+console.log(temp.ordersExecutedPartially.orders)

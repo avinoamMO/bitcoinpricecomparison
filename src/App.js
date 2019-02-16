@@ -9,15 +9,34 @@ import MiddleWindow from "./components/middleWindow";
 import Footer from "./components/footer";
 import "./App.css";
 
+
+/*
+Make the client get the data from the external APIs
+Send the data to the server with the queries they need
+Get the results from the server.
+
+This way I bypass all the rate limits and the logic is still in 
+the server.
+*/
+
 export default class App extends Component {
   constructor() {
     super();
     this.state = {
+      fiatCurrency : null,
+      cryptoCurrency: null,
+      exchanges : null,
       actionType: null,
       sum: null,
-      acceptConditions: null,
+      acceptCondition1: null,
+      acceptCondition2: null,
+      acceptCondition3: null,
+      acceptCondition4: null,
+      acceptCondition5: null,
+      acceptCondition6: null,
       lastTimeUpdatedFromServer: null, // TODO: make this load a timestamp each time the server is updated
-      lastTimeRequestedByUser: null
+      lastTimeRequestedByUser: null,
+      stageInSite: null
     };
   }
 
@@ -45,7 +64,20 @@ export default class App extends Component {
     var newSum = parseInt(this.state.sum) - 100
     this.setState({sum: newSum})
   }
+  pickFiatCurrency = e =>{
+    this.setState({fiatCurrency: e.target.value})
+  }
 
+  pickCryptoCurrency = e => {
+    this.setState({cryptoCurrency: e.target.value})
+  }
+
+  moveBack = () =>{
+
+  }
+  moveForward = () =>{
+
+  }
   render() {
     return (
       <div className="App">
@@ -54,6 +86,8 @@ export default class App extends Component {
           sumChange={this.handleSumChange}
           acceptConditionsChange={this.handleAcceptConditionsChange}
           researchRequestFromUser={this.handleResearchRequestFromUser}
+          pickFiatCurrency={this.pickFiatCurrency}
+          pickCryptoCurrency={this.pickCryptoCurrency}
         />
         <MiddleWindow />
         <GraphWindow 
