@@ -8,24 +8,15 @@ import InputWindow from "./components/inputWindow";
 import MiddleWindow from "./components/middleWindow";
 import Footer from "./components/footer";
 import "./App.css";
-
-
-/*
-Make the client get the data from the external APIs
-Send the data to the server with the queries they need
-Get the results from the server.
-
-This way I bypass all the rate limits and the logic is still in 
-the server.
-*/
+import axios from "axios";
 
 export default class App extends Component {
   constructor() {
     super();
     this.state = {
-      fiatCurrency : null,
+      fiatCurrency: null,
       cryptoCurrency: null,
-      exchanges : null,
+      exchanges: null,
       actionType: null,
       sum: null,
       acceptCondition1: null,
@@ -54,30 +45,32 @@ export default class App extends Component {
     var time =
       today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
     this.setState({ lastTimeRequestedByUser: time });
+    let data = this.state;
+    axios({
+      method: "post",
+      url: "http://localhost:3007/researchRequest",
+      data: { data }
+    });
   };
 
-  handleIncrementSumUp = () =>{
-    var newSum = parseInt(this.state.sum) + 100
-    this.setState({sum: newSum})
-  }
-  handleIncrementSumDown = () =>{
-    var newSum = parseInt(this.state.sum) - 100
-    this.setState({sum: newSum})
-  }
-  pickFiatCurrency = e =>{
-    this.setState({fiatCurrency: e.target.value})
-  }
+  handleIncrementSumUp = () => {
+    var newSum = parseInt(this.state.sum) + 100;
+    this.setState({ sum: newSum });
+  };
+  handleIncrementSumDown = () => {
+    var newSum = parseInt(this.state.sum) - 100;
+    this.setState({ sum: newSum });
+  };
+  pickFiatCurrency = e => {
+    this.setState({ fiatCurrency: e.target.value });
+  };
 
   pickCryptoCurrency = e => {
-    this.setState({cryptoCurrency: e.target.value})
-  }
+    this.setState({ cryptoCurrency: e.target.value });
+  };
 
-  moveBack = () =>{
-
-  }
-  moveForward = () =>{
-
-  }
+  moveBack = () => {};
+  moveForward = () => {};
   render() {
     return (
       <div className="App">
@@ -90,9 +83,9 @@ export default class App extends Component {
           pickCryptoCurrency={this.pickCryptoCurrency}
         />
         <MiddleWindow />
-        <GraphWindow 
-        incrementSumUp={this.handleIncrementSumUp}
-        incrementSumDown={this.handleIncrementSumDown}
+        <GraphWindow
+          incrementSumUp={this.handleIncrementSumUp}
+          incrementSumDown={this.handleIncrementSumDown}
         />
         <Footer />
       </div>

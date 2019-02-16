@@ -8,6 +8,15 @@ const router = express.Router()
         response.send("OK")
     });
 
+
+    
+    router.post("/researchRequest", function (req, response) 
+    {
+        console.log(req.body.data)
+        response.send("thanks")
+    })
+
+
     router.get("/getbit2corderbook", function (req, response) 
     {
 

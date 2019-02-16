@@ -28,10 +28,10 @@ export default class InputWindow extends Component {
           size="4"
         />
         <p />
-        Exchanges:
-        <datalist id="exchanges">
-          <option>Bit2C</option>
-          <option>Bits Of Gold</option>
+        Filter by country:
+        <datalist id="countries">
+          <option>Israel</option>
+          <option>United States</option>
         </datalist>
         <input
           autoComplete="on"
@@ -39,7 +39,20 @@ export default class InputWindow extends Component {
           onKeyUp={this.props.pickFiatCurrency}
           placeholder="exchanges"
           size="10"
-        />
+        /> (optional)
+        <p/>
+        Exchanges:
+        <datalist id="exchanges">
+          <option>Bit2C</option>
+          <option>Bits of Gold</option>
+        </datalist>
+        <input
+          autoComplete="on"
+          list="exchanges"
+          onKeyUp={this.props.pickFiatCurrency}
+          placeholder="exchanges"
+          size="10"
+        /> 
         <p />
         Desired action:
         <select onClick={this.props.actionTypeChange}>
@@ -48,7 +61,7 @@ export default class InputWindow extends Component {
           <option value="sell">Sell</option>
         </select>
         <p />
-        Amount:
+        How much:
         <input
           onKeyUp={this.props.sumChange}
           type="number"
@@ -56,20 +69,19 @@ export default class InputWindow extends Component {
           min="0.001"
           max="10000000"
         />
-        <p />I understand trading in crypto is risky
+        <p />Condition 1
         <input onClick={this.props.acceptConditionsChange} type="checkbox" />
-        <p />I understand this site could have mistakes
+        <p />Condition 2
         <input onClick={this.props.acceptConditionsChange} type="checkbox" />
-        <p />I understand I need to conduct my own research
+        <p />Condition 3
         <input onClick={this.props.acceptConditionsChange} type="checkbox" />
-        <p />I am the only person responsible for my financial choices
+        <p />Condition 4
         <input onClick={this.props.acceptConditionsChange} type="checkbox" />
-        <p />I understand the creators of this site are not accountable for
-        anything that I do
+        <p />Condition5
         <input onClick={this.props.acceptConditionsChange} type="checkbox" />
         <p />
         <button onClick={this.props.researchRequestFromUser}>
-          Research the market for me!
+          Move to the next stage!
         </button>
       </div>
     );
