@@ -44,7 +44,7 @@ export default class App extends Component {
     this.setState({ lastTimeRequestedByUser: time });
     let data = this.state;
     axios({
-      method: "post",
+      method: "get",
       url: "http://localhost:3007/researchRequest",
       data: { data }
     }).then(function(response){

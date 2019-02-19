@@ -34,7 +34,7 @@ app.listen(PORT, function() {
 fetchDataAndUpdateDb = () => {
   rp("https://bit2c.co.il/Exchanges/BtcNis/orderbook.json")
     .then(function(res) {
-      let Bit2CbookBTC = JSON.parse(res);
+      let Bit2CbookBTC = JSON.parse(res); // Save this in DB
     })
     .catch(function(err) {
       console.log(`error fetching data from Bit2C: \n + ${err}`);

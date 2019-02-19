@@ -35,11 +35,22 @@ let a = require('../bit2c');
         ]
       };
     
-    router.post("/researchRequest", function (req, response) 
+    // router.get("/researchRequest/:primaryMarket/:secondaryMarket/:exchanges/:buyorsell/:sum/", function (req, response) 
+    router.get("/researchRequest/", function (req, response) 
     {
         
-            orderBook = Bit2CbookBTC
-            let calculation = a(orderBook,5000)
+        
+            // orderBook = Bit2CbookBTC // Pull Bit2C book from DB
+            let calculation = a(thegoodbook,7000)
+
+            // req.params.primaryMarket
+            // req.params.secondaryMarket
+            // req.params.exchanges
+            // req.params.buyorsell
+            // req.params.sum
+            // Use these for processing the data
+
+            console.log(req.params)
             response.send(calculation)
         
         
