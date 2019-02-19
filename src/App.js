@@ -17,14 +17,10 @@ export default class App extends Component {
       fiatCurrency: null,
       cryptoCurrency: null,
       exchanges: null,
+      countries : null,
       actionType: null,
       sum: null,
-      acceptCondition1: null,
-      acceptCondition2: null,
-      acceptCondition3: null,
-      acceptCondition4: null,
-      acceptCondition5: null,
-      acceptCondition6: null,
+      acceptConditions: null,
       lastTimeUpdatedFromServer: null, // TODO: make this load a timestamp each time the server is updated
       lastTimeRequestedByUser: null,
       stageInSite: null
@@ -38,6 +34,7 @@ export default class App extends Component {
     this.setState({ sum: e.target.value });
   };
   handleAcceptConditionsChange = e => {
+    console.log(e.target.id)
     this.setState({ acceptConditions: e.target.checked });
   };
   handleResearchRequestFromUser = () => {
@@ -50,6 +47,10 @@ export default class App extends Component {
       method: "post",
       url: "http://localhost:3007/researchRequest",
       data: { data }
+    }).then(function(response){
+      console.log(response.data)
+    }).catch(function(error){
+      console.log(`error: ${error}`)
     });
   };
 
@@ -68,6 +69,15 @@ export default class App extends Component {
   pickCryptoCurrency = e => {
     this.setState({ cryptoCurrency: e.target.value });
   };
+  
+  handlePickCountries = e => {
+    this.setState({ countries: e.target.value });
+  };
+
+  handlePickExchanges = e => {
+    this.setState({ exchanges: e.target.value });
+  };
+
 
   moveBack = () => {};
   moveForward = () => {};
@@ -81,6 +91,8 @@ export default class App extends Component {
           researchRequestFromUser={this.handleResearchRequestFromUser}
           pickFiatCurrency={this.pickFiatCurrency}
           pickCryptoCurrency={this.pickCryptoCurrency}
+          pickCountries= {this.handlePickCountries}
+          pickExchanges = {this.handlePickExchanges}
         />
         <MiddleWindow />
         <GraphWindow

@@ -13,6 +13,14 @@ export default class InputWindow extends Component {
           <option>BTC</option>
           <option>ETH</option>
         </datalist>
+        <datalist id="exchanges">
+          <option>Bit2C</option>
+          <option>Bits of Gold</option>
+        </datalist>
+        <datalist id="countries">
+          <option>Israel</option>
+          <option>United States</option>
+        </datalist>
         <input
           autoComplete="on"
           list="fiat"
@@ -20,6 +28,7 @@ export default class InputWindow extends Component {
           placeholder="Fiat"
           size="4"
         />
+        with
         <input
           autoComplete="on"
           list="crypto"
@@ -35,24 +44,21 @@ export default class InputWindow extends Component {
         </datalist>
         <input
           autoComplete="on"
-          list="exchanges"
-          onKeyUp={this.props.pickFiatCurrency}
-          placeholder="exchanges"
+          list="countries"
+          onKeyUp={this.props.pickCountries}
+          placeholder="countries"
           size="10"
-        /> (optional)
-        <p/>
+        />{" "}
+        (optional)
+        <p />
         Exchanges:
-        <datalist id="exchanges">
-          <option>Bit2C</option>
-          <option>Bits of Gold</option>
-        </datalist>
         <input
           autoComplete="on"
           list="exchanges"
-          onKeyUp={this.props.pickFiatCurrency}
+          onKeyUp={this.props.pickExchanges}
           placeholder="exchanges"
           size="10"
-        /> 
+        />
         <p />
         Desired action:
         <select onClick={this.props.actionTypeChange}>
@@ -69,15 +75,8 @@ export default class InputWindow extends Component {
           min="0.001"
           max="10000000"
         />
-        <p />Condition 1
-        <input onClick={this.props.acceptConditionsChange} type="checkbox" />
-        <p />Condition 2
-        <input onClick={this.props.acceptConditionsChange} type="checkbox" />
-        <p />Condition 3
-        <input onClick={this.props.acceptConditionsChange} type="checkbox" />
-        <p />Condition 4
-        <input onClick={this.props.acceptConditionsChange} type="checkbox" />
-        <p />Condition5
+        <p />
+        Condition 1
         <input onClick={this.props.acceptConditionsChange} type="checkbox" />
         <p />
         <button onClick={this.props.researchRequestFromUser}>

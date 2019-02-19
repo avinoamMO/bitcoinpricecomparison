@@ -1,23 +1,52 @@
 const express = require("express")
 const request = require('request');
 const router = express.Router()
-
+let a = require('../bit2c');
 
     router.get("/sanity", function (req, response) 
     {
         response.send("OK")
     });
 
-
+    let thegoodbook = {
+        asks: [
+          [10000, 0.1, 1550166113],
+          [10000, 0.1, 1550165250],
+          [10000, 0.1, 1550165309],
+          [10000, 0.1, 1550168263],
+          [10000, 0.1, 1550168260],
+          [10000, 0.1, 1550166113],
+          [10000, 0.1, 1550165250],
+          [10000, 0.1, 1550165309],
+          [10000, 0.1, 1550168263],
+          [10000, 0.1, 1550168260]
+        ],
+        bids: [
+          [10000, 0.1, 1550166113],
+          [10000, 0.1, 1550165250],
+          [10000, 0.1, 1550165309],
+          [10000, 0.1, 1550168263],
+          [10000, 0.1, 1550168260],
+          [10000, 0.1, 1550166113],
+          [10000, 0.1, 1550165250],
+          [10000, 0.1, 1550165309],
+          [10000, 0.1, 1550168263],
+          [10000, 0.1, 1550168260]
+        ]
+      };
     
     router.post("/researchRequest", function (req, response) 
     {
-        console.log(req.body.data)
-        response.send("thanks")
+        
+            orderBook = Bit2CbookBTC
+            let calculation = a(orderBook,5000)
+            response.send(calculation)
+        
+        
     })
 
 
-    router.get("/getbit2corderbook", function (req, response) 
+    router.get("/getOrderBook/:exchangeName", function (req, response) 
     {
 
         const options = {  
