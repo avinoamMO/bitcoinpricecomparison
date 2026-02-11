@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchAllCcxtData } from "@/lib/ccxt-service";
+import { fetchAllExchangeData } from "@/lib/exchange-service";
 import { exchangeCache, PRICE_TTL_MS, FEE_TTL_MS } from "@/lib/exchange-cache";
 import { simulateMarketBuy } from "@/lib/market-simulation";
-import { CcxtApiResponse, CcxtExchangeData, CryptoAsset } from "@/types";
+import { MarketDataApiResponse, ExchangeData, CryptoAsset } from "@/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Allow up to 60s for fetching 100+ exchanges
@@ -19,10 +19,10 @@ export async function GET(request: NextRequest) {
       ? (assetParam as CryptoAsset)
       : "BTC";
 
-    const { exchanges, totalDiscovered } = await fetchAllCcxtData(asset);
+    const { exchanges, totalDiscovered } = await fetchAllExchangeData(asset);
 
     // Run market buy simulation for each exchange that has order book data
-    const exchangesWithSimulation: CcxtExchangeData[] = exchanges.map((ex) => {
+    const exchangesWithSimulation: ExchangeData[] = exchanges.map((ex) => {
       if (ex.orderBook?.rawAsks && ex.orderBook.rawAsks.length > 0) {
         const sim = simulateMarketBuy(ex.orderBook.rawAsks, investmentAmount);
         return {
@@ -50,18 +50,18 @@ export async function GET(request: NextRequest) {
       (e) => e.status === "ok"
     ).length;
 
-    const response: CcxtApiResponse = {
+    const response: MarketDataApiResponse = {
       exchanges: exchangesWithSimulation,
       timestamp: new Date().toISOString(),
       totalDiscovered,
       totalResponsive,
       cache: {
         pricesCachedAt: (() => {
-          const ts = exchangeCache.getTimestamp("ccxt:price:binance");
+          const ts = exchangeCache.getTimestamp("mkt:price:binance");
           return ts ? new Date(ts).toISOString() : null;
         })(),
         feesCachedAt: (() => {
-          const ts = exchangeCache.getTimestamp("ccxt:fees:binance");
+          const ts = exchangeCache.getTimestamp("mkt:fees:binance");
           return ts ? new Date(ts).toISOString() : null;
         })(),
         pricesTTL: PRICE_TTL_MS / 1000,
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[api/ccxt] Error:", error);
+    console.error("[api/market-data] Error:", error);
     return NextResponse.json(
       { error: "Failed to fetch exchange data" },
       { status: 500 }

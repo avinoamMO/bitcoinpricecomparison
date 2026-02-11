@@ -6,7 +6,7 @@
  * Tests for the CCXT service module.
  * Tests configuration, type structure, dynamic discovery, and registry.
  */
-import { EXCHANGE_CONFIGS } from "@/lib/ccxt-service";
+import { EXCHANGE_CONFIGS } from "@/lib/exchange-service";
 import {
   FEATURED_EXCHANGES,
   getFeaturedConfig,
@@ -361,6 +361,8 @@ describe("CCXT Type Structures", () => {
       tradingPair: "BTC/USDT",
       assetSymbol: "BTC",
       isDex: false,
+      platformType: "exchange",
+      depositMethods: [],
       fees: {
         takerFee: 0.1,
         makerFee: 0.1,
@@ -389,6 +391,8 @@ describe("CCXT Type Structures", () => {
     expect(exchange.countries).toEqual(["US"]);
     expect(exchange.assetSymbol).toBe("BTC");
     expect(exchange.isDex).toBe(false);
+    expect(exchange.platformType).toBe("exchange");
+    expect(exchange.depositMethods).toEqual([]);
   });
 
   it("CcxtExchangeData supports featured exchange fields", () => {
@@ -404,6 +408,8 @@ describe("CCXT Type Structures", () => {
       tradingPair: "BTC/USDT",
       assetSymbol: "BTC",
       isDex: false,
+      platformType: "exchange",
+      depositMethods: ["Bank Transfer", "Credit Card", "Crypto", "P2P"],
       fees: {
         takerFee: 0.1,
         makerFee: 0.1,
@@ -426,6 +432,9 @@ describe("CCXT Type Structures", () => {
     expect(exchange.featured).toBe(true);
     expect(exchange.affiliateUrl).toBeTruthy();
     expect(exchange.logoUrl).toBeTruthy();
+    expect(exchange.platformType).toBe("exchange");
+    expect(exchange.depositMethods).toContain("Bank Transfer");
+    expect(exchange.depositMethods).toContain("Credit Card");
   });
 
   it("FeeTier has correct shape", () => {
@@ -593,5 +602,87 @@ describe("Fee Tier Validation", () => {
         expect(config.manualFees.makerFee).toBeGreaterThanOrEqual(0);
       }
     });
+  });
+});
+
+describe("Platform Type Classification", () => {
+  it("all featured exchanges have a platformType", () => {
+    FEATURED_EXCHANGES.forEach((config) => {
+      expect(["exchange", "broker"]).toContain(config.platformType);
+    });
+  });
+
+  it("classifies Binance, Kraken, Bybit, OKX, Bit2C as exchanges", () => {
+    const exchangeIds = ["binance", "kraken", "bybit", "okx", "bit2c"];
+    exchangeIds.forEach((id) => {
+      const config = getFeaturedConfig(id);
+      expect(config?.platformType).toBe("exchange");
+    });
+  });
+
+  it("classifies Coinbase and Bits of Gold as brokers", () => {
+    const brokerIds = ["coinbase", "bitsofgold"];
+    brokerIds.forEach((id) => {
+      const config = getFeaturedConfig(id);
+      expect(config?.platformType).toBe("broker");
+    });
+  });
+});
+
+describe("Deposit Methods", () => {
+  it("all featured exchanges have depositMethods defined", () => {
+    FEATURED_EXCHANGES.forEach((config) => {
+      expect(config.depositMethods).toBeDefined();
+      expect(config.depositMethods.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("Binance supports Bank Transfer, Credit Card, Crypto, P2P", () => {
+    const binance = getFeaturedConfig("binance");
+    expect(binance?.depositMethods).toContain("Bank Transfer");
+    expect(binance?.depositMethods).toContain("Credit Card");
+    expect(binance?.depositMethods).toContain("Crypto");
+    expect(binance?.depositMethods).toContain("P2P");
+  });
+
+  it("Coinbase supports Bank Transfer, Credit Card, Debit Card, PayPal, Crypto", () => {
+    const coinbase = getFeaturedConfig("coinbase");
+    expect(coinbase?.depositMethods).toContain("Bank Transfer");
+    expect(coinbase?.depositMethods).toContain("Credit Card");
+    expect(coinbase?.depositMethods).toContain("Debit Card");
+    expect(coinbase?.depositMethods).toContain("PayPal");
+    expect(coinbase?.depositMethods).toContain("Crypto");
+  });
+
+  it("Kraken supports Bank Transfer (SEPA/Wire) and Crypto", () => {
+    const kraken = getFeaturedConfig("kraken");
+    expect(kraken?.depositMethods).toContain("Bank Transfer (SEPA/Wire)");
+    expect(kraken?.depositMethods).toContain("Crypto");
+  });
+
+  it("Bit2C supports Bank Transfer (Israeli banks) and Crypto", () => {
+    const bit2c = getFeaturedConfig("bit2c");
+    expect(bit2c?.depositMethods).toContain("Bank Transfer (Israeli banks)");
+    expect(bit2c?.depositMethods).toContain("Crypto");
+  });
+
+  it("Bits of Gold supports Bank Transfer (Israeli banks) and Cash", () => {
+    const bog = getFeaturedConfig("bitsofgold");
+    expect(bog?.depositMethods).toContain("Bank Transfer (Israeli banks)");
+    expect(bog?.depositMethods).toContain("Cash");
+  });
+});
+
+describe("EUR Pair Support", () => {
+  it("BTC pairs include EUR", () => {
+    expect(ASSET_CONFIG.BTC.pairs).toContain("BTC/EUR");
+  });
+
+  it("ETH pairs include EUR", () => {
+    expect(ASSET_CONFIG.ETH.pairs).toContain("ETH/EUR");
+  });
+
+  it("DOGE pairs include EUR", () => {
+    expect(ASSET_CONFIG.DOGE.pairs).toContain("DOGE/EUR");
   });
 });

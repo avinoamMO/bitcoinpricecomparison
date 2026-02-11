@@ -1,16 +1,16 @@
 /**
- * Price service: CCXT as primary source, CoinGecko as fallback.
+ * Price service: exchange data as primary source, CoinGecko as fallback.
  *
  * For USD-paired exchanges (Binance, Coinbase, Kraken, Bybit, OKX),
- * CCXT fetchTicker gives the real exchange price directly.
+ * the exchange data provider gives the real exchange price directly.
  * For ILS-paired exchanges (Bit2C) and manual exchanges (Bits of Gold),
  * we use CoinGecko for the base price.
  *
- * CoinGecko also serves as fallback when any CCXT call fails.
+ * CoinGecko also serves as fallback when any exchange call fails.
  */
 import { Currency, ExchangePriceResponse } from "@/types";
 import { exchanges } from "@/data/exchanges";
-import { fetchCcxtPrice } from "./ccxt-service";
+import { fetchExchangePrice } from "./exchange-service";
 
 const CACHE_DURATION_MS = 30_000;
 const COINGECKO_API = "https://api.coingecko.com/api/v3";
@@ -70,7 +70,7 @@ async function fetchCoinGeckoPrice(
   }
 }
 
-// ─── Main Price Fetch (CCXT primary, CoinGecko fallback) ─────────────
+// ─── Main Price Fetch (Exchange primary, CoinGecko fallback) ────────
 
 export async function fetchPrices(
   currency: Currency = "USD"
@@ -84,11 +84,11 @@ export async function fetchPrices(
   const prices: Record<string, number> = {};
   let coinGeckoBase: number | null = null;
 
-  // Try CCXT for each exchange in parallel
-  const ccxtResults = await Promise.allSettled(
+  // Try exchange data provider for each exchange in parallel
+  const exchangeResults = await Promise.allSettled(
     exchanges.map(async (exchange) => {
       try {
-        const result = await fetchCcxtPrice(exchange.id);
+        const result = await fetchExchangePrice(exchange.id);
         if (result) {
           return { id: exchange.id, price: result.price, pair: result.pair };
         }
@@ -99,11 +99,11 @@ export async function fetchPrices(
     })
   );
 
-  // Collect CCXT results
-  for (const result of ccxtResults) {
+  // Collect exchange results
+  for (const result of exchangeResults) {
     if (result.status === "fulfilled" && result.value) {
       const { id, price, pair } = result.value;
-      // Only use CCXT price directly if the pair matches the requested currency
+      // Only use exchange price directly if the pair matches the requested currency
       // BTC/USDT prices are close enough to USD for comparison purposes
       const pairCurrency = pair.split("/")[1] || "";
       const isUsdLike =
@@ -121,7 +121,7 @@ export async function fetchPrices(
     }
   }
 
-  // For exchanges without CCXT prices, fall back to CoinGecko
+  // For exchanges without direct prices, fall back to CoinGecko
   const missingExchanges = exchanges.filter((e) => !prices[e.id]);
   if (missingExchanges.length > 0) {
     if (coinGeckoBase === null) {

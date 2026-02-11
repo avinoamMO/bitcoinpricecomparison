@@ -1,12 +1,12 @@
 /**
- * CCXT-powered exchange data service.
+ * Exchange data service.
  *
- * Dynamically discovers ALL CCXT exchanges that support BTC trading.
+ * Dynamically discovers all exchanges that support BTC trading.
  * Featured exchanges (Binance, Coinbase, Kraken, Bybit, OKX, Bit2C, Bits of Gold)
  * retain their affiliate links and detailed metadata.
  *
  * Features:
- * - Dynamic discovery of 100+ exchanges from CCXT
+ * - Dynamic discovery of 100+ exchanges
  * - Batched fetching (10 exchanges at a time) with rate limiting
  * - Exchange health monitoring (auto-hides after 3 consecutive failures)
  * - Aggressive caching (prices: 30s, fees: 1hr, discovery: 1hr)
@@ -14,8 +14,8 @@
  */
 import ccxt, { type Exchange } from "ccxt";
 import {
-  CcxtExchangeData,
-  CcxtFeeData,
+  ExchangeData,
+  FeeData,
   OrderBookData,
   CryptoAsset,
 } from "@/types";
@@ -55,11 +55,11 @@ interface DiscoveredExchange {
 }
 
 /**
- * Discovers all CCXT exchanges that potentially support BTC trading.
+ * Discovers all exchanges that potentially support BTC trading.
  * Results are cached for 1 hour.
  */
 function discoverExchanges(): DiscoveredExchange[] {
-  const cacheKey = "ccxt:discovery";
+  const cacheKey = "xch:discovery";
   const cached = exchangeCache.get<DiscoveredExchange[]>(cacheKey, DISCOVERY_TTL_MS);
   if (cached) return cached;
 
@@ -100,7 +100,7 @@ function discoverExchanges(): DiscoveredExchange[] {
   return discovered;
 }
 
-// ─── CCXT Instance Management ────────────────────────────────────────
+// ─── Exchange Instance Management ───────────────────────────────────
 
 const exchangeInstances = new Map<string, Exchange>();
 
@@ -135,7 +135,7 @@ async function fetchTickerPrice(
   preferredPair?: string,
   fallbackPairs?: string[]
 ): Promise<{ price: number; pair: string } | null> {
-  const cacheKey = `ccxt:price:${asset}:${exchangeId}`;
+  const cacheKey = `mkt:price:${asset}:${exchangeId}`;
   const cached = exchangeCache.get<{ price: number; pair: string }>(cacheKey, PRICE_TTL_MS);
   if (cached) return cached;
 
@@ -171,7 +171,7 @@ async function fetchOrderBookData(
   activePair: string,
   asset: CryptoAsset = "BTC"
 ): Promise<OrderBookData | null> {
-  const cacheKey = `ccxt:orderbook:${asset}:${exchangeId}`;
+  const cacheKey = `mkt:orderbook:${asset}:${exchangeId}`;
   const cached = exchangeCache.get<OrderBookData>(cacheKey, ORDERBOOK_TTL_MS);
   if (cached) return cached;
 
@@ -228,11 +228,11 @@ function extractFees(
   exchange: Exchange | null,
   asset: CryptoAsset = "BTC",
   featuredConfig?: FeaturedExchangeConfig
-): CcxtFeeData {
+): FeeData {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const exchangeId = featuredConfig?.id || (exchange as any)?.id as string || "unknown";
-  const cacheKey = `ccxt:fees:${asset}:${exchangeId}`;
-  const cached = exchangeCache.get<CcxtFeeData>(cacheKey, FEE_TTL_MS);
+  const cacheKey = `mkt:fees:${asset}:${exchangeId}`;
+  const cached = exchangeCache.get<FeeData>(cacheKey, FEE_TTL_MS);
   if (cached) return cached;
 
   // Start with defaults
@@ -240,7 +240,7 @@ function extractFees(
   let makerFee = featuredConfig?.manualFees?.makerFee ?? 0.1;
   let withdrawalFee = featuredConfig?.manualFees?.withdrawalFee ?? null;
 
-  // Try to get fees from CCXT exchange.fees object
+  // Try to get fees from the exchange data provider
   if (exchange) {
     try {
       if (exchange.fees) {
@@ -271,7 +271,7 @@ function extractFees(
     withdrawalFee = featuredConfig.manualFees.withdrawalFee;
   }
 
-  const fees: CcxtFeeData = {
+  const fees: FeeData = {
     takerFee,
     makerFee,
     withdrawalFee,
@@ -289,7 +289,7 @@ function extractFees(
 async function fetchExchangeData(
   discovered: DiscoveredExchange,
   asset: CryptoAsset = "BTC"
-): Promise<CcxtExchangeData> {
+): Promise<ExchangeData> {
   const featuredConfig = getFeaturedConfig(discovered.id);
   const isFeatured = !!featuredConfig;
 
@@ -308,13 +308,13 @@ async function fetchExchangeData(
 
   const exchange = getExchangeInstance(discovered.id);
   if (!exchange) {
-    exchangeHealth.recordFailure(discovered.id, "Could not create CCXT instance");
-    return buildErrorResult(discovered, featuredConfig, "Exchange not available in CCXT", asset);
+    exchangeHealth.recordFailure(discovered.id, "Could not create exchange instance");
+    return buildErrorResult(discovered, featuredConfig, "Exchange not available", asset);
   }
 
   try {
     // Load markets (cached for 1hr)
-    const marketsKey = `ccxt:markets:${discovered.id}`;
+    const marketsKey = `mkt:markets:${discovered.id}`;
     if (!exchangeCache.get(marketsKey, FEE_TTL_MS)) {
       await exchange.loadMarkets();
       exchangeCache.set(marketsKey, true);
@@ -368,6 +368,8 @@ async function fetchExchangeData(
       tradingPair: activePair,
       assetSymbol: asset,
       isDex: isDexExchange(discovered.id),
+      platformType: featuredConfig?.platformType ?? "exchange",
+      depositMethods: featuredConfig?.depositMethods ?? [],
       fees,
       orderBook: orderBookResult,
       simulation: null,
@@ -392,7 +394,7 @@ function buildErrorResult(
   featuredConfig: FeaturedExchangeConfig | undefined,
   error: string,
   asset: CryptoAsset = "BTC"
-): CcxtExchangeData {
+): ExchangeData {
   return {
     id: discovered.id,
     name: featuredConfig?.name ?? discovered.name,
@@ -405,6 +407,8 @@ function buildErrorResult(
     tradingPair: featuredConfig?.tradingPair ?? `${asset}/USDT`,
     assetSymbol: asset,
     isDex: isDexExchange(discovered.id),
+    platformType: featuredConfig?.platformType ?? "exchange",
+    depositMethods: featuredConfig?.depositMethods ?? [],
     fees: extractFees(null, asset, featuredConfig),
     orderBook: null,
     simulation: null,
@@ -422,7 +426,7 @@ function buildErrorResult(
 
 // ─── Bits of Gold (Manual Only) ──────────────────────────────────────
 
-function getBitsOfGoldData(): CcxtExchangeData {
+function getBitsOfGoldData(): ExchangeData {
   const config = getFeaturedConfig("bitsofgold")!;
   return {
     id: "bitsofgold",
@@ -436,6 +440,8 @@ function getBitsOfGoldData(): CcxtExchangeData {
     tradingPair: "BTC/ILS",
     assetSymbol: "BTC",
     isDex: false,
+    platformType: config.platformType,
+    depositMethods: config.depositMethods,
     fees: {
       takerFee: 0.5,
       makerFee: 0.5,
@@ -472,8 +478,8 @@ async function sleep(ms: number): Promise<void> {
 async function fetchBatched(
   exchanges: DiscoveredExchange[],
   asset: CryptoAsset = "BTC"
-): Promise<CcxtExchangeData[]> {
-  const results: CcxtExchangeData[] = [];
+): Promise<ExchangeData[]> {
+  const results: ExchangeData[] = [];
 
   // Sort: featured first, then alphabetically
   const sorted = [...exchanges].sort((a, b) => {
@@ -511,19 +517,19 @@ async function fetchBatched(
 // ─── Main API: Fetch All Exchange Data ──────────────────────────────
 
 /**
- * Main entry point: discovers all CCXT exchanges, filters to those with BTC pairs,
+ * Main entry point: discovers all exchanges, filters to those with BTC pairs,
  * fetches prices in batches, and returns the combined data.
  *
  * Results are a mix of cached and fresh data depending on TTLs.
  */
-export async function fetchAllCcxtData(asset: CryptoAsset = "BTC"): Promise<{
-  exchanges: CcxtExchangeData[];
+export async function fetchAllExchangeData(asset: CryptoAsset = "BTC"): Promise<{
+  exchanges: ExchangeData[];
   totalDiscovered: number;
 }> {
   // Check for a full cached result first (per asset)
-  const fullCacheKey = `ccxt:allData:${asset}`;
+  const fullCacheKey = `mkt:allData:${asset}`;
   const fullCached = exchangeCache.get<{
-    exchanges: CcxtExchangeData[];
+    exchanges: ExchangeData[];
     totalDiscovered: number;
   }>(fullCacheKey, PRICE_TTL_MS);
   if (fullCached) return fullCached;
@@ -560,10 +566,10 @@ export async function fetchAllCcxtData(asset: CryptoAsset = "BTC"): Promise<{
 }
 
 /**
- * Fetch CCXT price for a single exchange (used by price-service as primary source).
+ * Fetch price for a single exchange (used by price-service as primary source).
  * Returns the price in the exchange's native pair currency.
  */
-export async function fetchCcxtPrice(
+export async function fetchExchangePrice(
   exchangeId: string
 ): Promise<{ price: number; pair: string } | null> {
   const featuredConfig = getFeaturedConfig(exchangeId);
@@ -573,7 +579,7 @@ export async function fetchCcxtPrice(
   if (!exchange) return null;
 
   try {
-    const marketsKey = `ccxt:markets:${exchangeId}`;
+    const marketsKey = `mkt:markets:${exchangeId}`;
     if (!exchangeCache.get(marketsKey, FEE_TTL_MS)) {
       await exchange.loadMarkets();
       exchangeCache.set(marketsKey, true);

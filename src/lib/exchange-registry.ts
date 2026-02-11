@@ -2,13 +2,13 @@
  * Exchange Registry
  *
  * Maintains metadata for featured exchanges (affiliate links, detailed info)
- * and maps CCXT exchange IDs to regions based on country codes.
+ * and maps exchange IDs to regions based on country codes.
  *
  * Featured exchanges are the original 7 with full metadata.
- * Dynamically discovered exchanges get region/country from CCXT metadata.
+ * Dynamically discovered exchanges get region/country from provider metadata.
  */
 
-import { ExchangeRegion, FeeTier, CcxtFeeData, CryptoAsset, ASSET_CONFIG } from "@/types";
+import { ExchangeRegion, FeeTier, FeeData, CryptoAsset, ASSET_CONFIG, PlatformType, DepositMethodLabel } from "@/types";
 
 // ─── Featured Exchange Config ───────────────────────────────────────
 
@@ -21,13 +21,15 @@ export interface FeaturedExchangeConfig {
   tradingPair: string;
   fallbackPairs: string[];
   supportedAssets: CryptoAsset[];
+  platformType: PlatformType;
+  depositMethods: DepositMethodLabel[];
   feePageUrl: string;
   websiteUrl: string;
   affiliateUrl: string;
   logoUrl: string;
-  manualFees?: Partial<CcxtFeeData>;
+  manualFees?: Partial<FeeData>;
   manualFeeTiers?: FeeTier[];
-  /** If true, skip CCXT entirely and use manual data only */
+  /** If true, use manual data only (no live fetching) */
   manualOnly?: boolean;
 }
 
@@ -41,6 +43,8 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     tradingPair: "BTC/USDT",
     fallbackPairs: ["BTC/USDC"],
     supportedAssets: ["BTC", "ETH", "DOGE"],
+    platformType: "exchange",
+    depositMethods: ["Bank Transfer", "Credit Card", "Crypto", "P2P"],
     feePageUrl: "https://www.binance.com/en/fee/schedule",
     websiteUrl: "https://www.binance.com",
     affiliateUrl: "https://www.binance.com/en/register?ref=CRYPTOROI",
@@ -64,6 +68,8 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     tradingPair: "BTC/USDT",
     fallbackPairs: ["BTC/USD", "BTC/USDC"],
     supportedAssets: ["BTC", "ETH", "DOGE"],
+    platformType: "broker",
+    depositMethods: ["Bank Transfer", "Credit Card", "Debit Card", "PayPal", "Crypto"],
     feePageUrl: "https://www.coinbase.com/advanced-fees",
     websiteUrl: "https://www.coinbase.com",
     affiliateUrl: "https://www.coinbase.com/join/CRYPTOROI",
@@ -87,6 +93,8 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     tradingPair: "BTC/USDT",
     fallbackPairs: ["BTC/USD"],
     supportedAssets: ["BTC", "ETH", "DOGE"],
+    platformType: "exchange",
+    depositMethods: ["Bank Transfer (SEPA/Wire)", "Crypto"],
     feePageUrl: "https://www.kraken.com/features/fee-schedule",
     websiteUrl: "https://www.kraken.com",
     affiliateUrl: "https://www.kraken.com/sign-up?ref=CRYPTOROI",
@@ -110,6 +118,8 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     tradingPair: "BTC/USDT",
     fallbackPairs: ["BTC/USDC"],
     supportedAssets: ["BTC", "ETH", "DOGE"],
+    platformType: "exchange",
+    depositMethods: ["Credit Card", "P2P", "Crypto"],
     feePageUrl: "https://www.bybit.com/en/help-center/article/Fee-Structure",
     websiteUrl: "https://www.bybit.com",
     affiliateUrl: "https://www.bybit.com/register?affiliate_id=CRYPTOROI",
@@ -132,6 +142,8 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     tradingPair: "BTC/USDT",
     fallbackPairs: ["BTC/USDC"],
     supportedAssets: ["BTC", "ETH", "DOGE"],
+    platformType: "exchange",
+    depositMethods: ["Bank Transfer", "Credit Card", "P2P", "Crypto"],
     feePageUrl: "https://www.okx.com/fees",
     websiteUrl: "https://www.okx.com",
     affiliateUrl: "https://www.okx.com/join/CRYPTOROI",
@@ -154,6 +166,8 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     tradingPair: "BTC/NIS",
     fallbackPairs: [],
     supportedAssets: ["BTC", "ETH"],
+    platformType: "exchange",
+    depositMethods: ["Bank Transfer (Israeli banks)", "Crypto"],
     feePageUrl: "https://www.bit2c.co.il/home/Fees",
     websiteUrl: "https://www.bit2c.co.il",
     affiliateUrl: "https://www.bit2c.co.il/Register?ref=CRYPTOROI",
@@ -179,6 +193,8 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     tradingPair: "BTC/ILS",
     fallbackPairs: [],
     supportedAssets: ["BTC"],
+    platformType: "broker",
+    depositMethods: ["Bank Transfer (Israeli banks)", "Cash"],
     feePageUrl: "https://www.bitsofgold.co.il/fees",
     websiteUrl: "https://www.bitsofgold.co.il",
     affiliateUrl: "https://www.bitsofgold.co.il/?ref=CRYPTOROI",
@@ -200,8 +216,8 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
 // ─── Region Detection ───────────────────────────────────────────────
 
 /**
- * Maps CCXT country codes (ISO 2-letter codes or country names) to regions.
- * CCXT exchanges have a `.countries` array property.
+ * Maps country codes (ISO 2-letter codes or country names) to regions.
+ * Exchanges have a `.countries` array property.
  */
 const COUNTRY_TO_REGION: Record<string, ExchangeRegion> = {
   // Americas
@@ -249,7 +265,7 @@ export function detectRegion(countryCodes: string[]): ExchangeRegion {
 }
 
 /**
- * Formats CCXT country array into a readable string.
+ * Formats country array into a readable string.
  */
 export function formatCountry(countryCodes: string[]): string {
   if (!countryCodes || countryCodes.length === 0) return "Unknown";

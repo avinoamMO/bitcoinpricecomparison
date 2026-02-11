@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { CcxtExchangeData, ExchangeRegion } from "@/types";
+import { ExchangeData, ExchangeRegion } from "@/types";
 import { Search, Filter, ChevronDown, ChevronUp, Check, X } from "lucide-react";
 
 export type SortOption = "best_price" | "lowest_fees" | "alphabetical" | "highest_volume";
 export type CexDexFilter = "all" | "cex" | "dex";
+export type CurrencyPairFilter = "usd" | "eur" | "all";
+export type PlatformTypeFilter = "all" | "exchange" | "broker";
+export type DepositMethodFilter = "all" | "bank_transfer" | "credit_card" | "crypto" | "cash_p2p";
 
 const REGIONS: { value: ExchangeRegion | "All"; label: string }[] = [
   { value: "All", label: "All" },
@@ -23,6 +26,26 @@ const CEX_DEX_OPTIONS: { value: CexDexFilter; label: string }[] = [
   { value: "dex", label: "DEX Only" },
 ];
 
+const CURRENCY_PAIR_OPTIONS: { value: CurrencyPairFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "usd", label: "USD" },
+  { value: "eur", label: "EUR" },
+];
+
+const PLATFORM_TYPE_OPTIONS: { value: PlatformTypeFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "exchange", label: "Exchanges" },
+  { value: "broker", label: "Brokers" },
+];
+
+const DEPOSIT_METHOD_OPTIONS: { value: DepositMethodFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "bank_transfer", label: "Bank Transfer" },
+  { value: "credit_card", label: "Credit Card" },
+  { value: "crypto", label: "Crypto" },
+  { value: "cash_p2p", label: "Cash/P2P" },
+];
+
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "best_price", label: "Best Price" },
   { value: "lowest_fees", label: "Lowest Fees" },
@@ -37,6 +60,12 @@ interface ExchangeFiltersProps {
   onRegionChange: (region: ExchangeRegion | "All") => void;
   cexDexFilter: CexDexFilter;
   onCexDexFilterChange: (filter: CexDexFilter) => void;
+  currencyPairFilter: CurrencyPairFilter;
+  onCurrencyPairFilterChange: (filter: CurrencyPairFilter) => void;
+  platformTypeFilter: PlatformTypeFilter;
+  onPlatformTypeFilterChange: (filter: PlatformTypeFilter) => void;
+  depositMethodFilter: DepositMethodFilter;
+  onDepositMethodFilterChange: (filter: DepositMethodFilter) => void;
   selectedCountry: string;
   onCountryChange: (country: string) => void;
   availableCountries: string[];
@@ -48,7 +77,7 @@ interface ExchangeFiltersProps {
   visibleExchanges: number;
   responsiveExchanges: number;
   // Exchange selection
-  allExchanges: CcxtExchangeData[];
+  allExchanges: ExchangeData[];
   selectedExchangeIds: Set<string>;
   onToggleExchange: (id: string) => void;
   onSelectAllVisible: () => void;
@@ -62,6 +91,12 @@ export function ExchangeFilters({
   onRegionChange,
   cexDexFilter,
   onCexDexFilterChange,
+  currencyPairFilter,
+  onCurrencyPairFilterChange,
+  platformTypeFilter,
+  onPlatformTypeFilterChange,
+  depositMethodFilter,
+  onDepositMethodFilterChange,
   selectedCountry,
   onCountryChange,
   availableCountries,
@@ -162,7 +197,7 @@ export function ExchangeFilters({
         </div>
       </div>
 
-      {/* Region tabs + CEX/DEX filter */}
+      {/* Region tabs + CEX/DEX filter + Platform Type filter */}
       <div className="flex flex-wrap gap-1.5">
         {REGIONS.map((region) => (
           <button
@@ -194,6 +229,22 @@ export function ExchangeFilters({
           </button>
         ))}
 
+        {/* Platform Type filter (Broker vs Exchange) */}
+        <span className="mx-1 border-l border-border" />
+        {PLATFORM_TYPE_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onPlatformTypeFilterChange(opt.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              platformTypeFilter === opt.value
+                ? "bg-crypto-blue/20 text-crypto-blue border border-crypto-blue/30"
+                : "bg-muted text-muted-foreground border border-border hover:border-crypto-blue/30"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+
         {/* Exchange picker toggle */}
         <button
           onClick={() => setShowExchangePicker(!showExchangePicker)}
@@ -212,6 +263,40 @@ export function ExchangeFilters({
             ? `${selectedExchangeIds.size} Exchanges Selected`
             : "Select Exchanges"}
         </button>
+      </div>
+
+      {/* Currency pair + Deposit method filter row */}
+      <div className="flex flex-wrap gap-1.5">
+        {/* Currency pair filter (USD / EUR / All) */}
+        {CURRENCY_PAIR_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onCurrencyPairFilterChange(opt.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              currencyPairFilter === opt.value
+                ? "bg-crypto-green/20 text-crypto-green border border-crypto-green/30"
+                : "bg-muted text-muted-foreground border border-border hover:border-crypto-green/30"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+
+        {/* Deposit method filter */}
+        <span className="mx-1 border-l border-border" />
+        {DEPOSIT_METHOD_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onDepositMethodFilterChange(opt.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              depositMethodFilter === opt.value
+                ? "bg-gold/20 text-gold border border-gold/30"
+                : "bg-muted text-muted-foreground border border-border hover:border-gold/30"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       {/* Exchange Selection Panel */}

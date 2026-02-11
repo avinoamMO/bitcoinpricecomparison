@@ -1,14 +1,14 @@
 "use client";
 
-import { CcxtExchangeData, ASSET_CONFIG } from "@/types";
+import { ExchangeData, ASSET_CONFIG } from "@/types";
 import { ExternalLink, Star, Wifi, WifiOff, AlertTriangle, TrendingDown } from "lucide-react";
 
-interface CcxtComparisonTableProps {
-  exchanges: CcxtExchangeData[];
+interface ExchangeComparisonTableProps {
+  exchanges: ExchangeData[];
   investmentAmount: number;
 }
 
-function HealthIndicator({ exchange }: { exchange: CcxtExchangeData }) {
+function HealthIndicator({ exchange }: { exchange: ExchangeData }) {
   if (exchange.status === "ok" && exchange.healthStatus === "healthy") {
     return (
       <span
@@ -46,10 +46,10 @@ function HealthIndicator({ exchange }: { exchange: CcxtExchangeData }) {
   );
 }
 
-export function CcxtComparisonTable({
+export function ExchangeComparisonTable({
   exchanges,
   investmentAmount,
-}: CcxtComparisonTableProps) {
+}: ExchangeComparisonTableProps) {
   const usdExchanges = exchanges.filter(
     (e) =>
       e.price != null &&
@@ -110,6 +110,7 @@ export function CcxtComparisonTable({
             const isILS =
               ex.tradingPair.includes("ILS") ||
               ex.tradingPair.includes("NIS");
+            const isEUR = ex.tradingPair.includes("EUR");
             const takerCost =
               investmentAmount * (ex.fees.takerFee / 100);
             const spreadCost = ex.orderBook
@@ -117,7 +118,7 @@ export function CcxtComparisonTable({
               : 0;
             const totalCost = takerCost + spreadCost;
             const priceDiff =
-              ex.price != null && bestUSDPrice != null && !isILS
+              ex.price != null && bestUSDPrice != null && !isILS && !isEUR
                 ? ((ex.price - bestUSDPrice) / bestUSDPrice) * 100
                 : null;
 
@@ -169,7 +170,9 @@ export function CcxtComparisonTable({
                       <div className="text-foreground">
                         {isILS
                           ? `${ex.price.toLocaleString("he-IL", { maximumFractionDigits: 0 })} ILS`
-                          : `$${ex.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                          : isEUR
+                            ? `\u20AC${ex.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : `$${ex.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                       </div>
                       {priceDiff != null && priceDiff !== 0 && (
                         <div
@@ -326,10 +329,10 @@ export function CcxtComparisonTable({
 
       {exchanges.some(
         (e) =>
-          e.tradingPair.includes("ILS") || e.tradingPair.includes("NIS")
+          e.tradingPair.includes("ILS") || e.tradingPair.includes("NIS") || e.tradingPair.includes("EUR")
       ) && (
         <p className="text-xs text-muted-foreground mt-2 px-3">
-          * Israeli exchanges show ILS prices. Price comparison percentages
+          * Israeli exchanges show ILS prices, European pairs show EUR prices. Price comparison percentages
           are only shown for USD-denominated pairs.
         </p>
       )}

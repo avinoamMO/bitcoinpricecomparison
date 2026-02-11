@@ -124,7 +124,7 @@ export interface Article {
   keywords: string[];
 }
 
-// ─── CCXT Integration Types ──────────────────────────────────────────
+// ─── Exchange Integration Types ─────────────────────────────────────
 
 export interface FeeTier {
   tierLabel: string;
@@ -134,7 +134,7 @@ export interface FeeTier {
   makerFee: number;
 }
 
-export interface CcxtFeeData {
+export interface FeeData {
   takerFee: number;             // percent, e.g. 0.1 means 0.1%
   makerFee: number;             // percent
   withdrawalFee: number | null; // withdrawal fee in the asset's unit
@@ -175,7 +175,20 @@ export type ExchangeRegion = "Global" | "Americas" | "Europe" | "APAC" | "MENA" 
 
 export type ExchangeHealthStatus = "healthy" | "degraded" | "down" | "unknown";
 
-export interface CcxtExchangeData {
+export type PlatformType = "exchange" | "broker";
+
+export type DepositMethodLabel =
+  | "Bank Transfer"
+  | "Credit Card"
+  | "Debit Card"
+  | "Crypto"
+  | "P2P"
+  | "PayPal"
+  | "Cash"
+  | "Bank Transfer (SEPA/Wire)"
+  | "Bank Transfer (Israeli banks)";
+
+export interface ExchangeData {
   id: string;
   name: string;
   country: string;
@@ -187,7 +200,9 @@ export interface CcxtExchangeData {
   tradingPair: string;
   assetSymbol: string;
   isDex: boolean;
-  fees: CcxtFeeData;
+  platformType: PlatformType;
+  depositMethods: DepositMethodLabel[];
+  fees: FeeData;
   orderBook: OrderBookData | null;
   simulation: MarketSimulationResult | null;
   feePageUrl: string;
@@ -201,8 +216,8 @@ export interface CcxtExchangeData {
   error?: string;
 }
 
-export interface CcxtApiResponse {
-  exchanges: CcxtExchangeData[];
+export interface MarketDataApiResponse {
+  exchanges: ExchangeData[];
   timestamp: string;
   totalDiscovered: number;
   totalResponsive: number;
@@ -217,3 +232,8 @@ export interface CcxtApiResponse {
     feesTTL: number;
   };
 }
+
+// ─── Backward-compatible aliases ─────────────────────────────────────
+export type CcxtExchangeData = ExchangeData;
+export type CcxtFeeData = FeeData;
+export type CcxtApiResponse = MarketDataApiResponse;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CcxtExchangeData } from "@/types";
+import { ExchangeData } from "@/types";
 import {
   ExternalLink,
   Star,
@@ -17,10 +17,13 @@ function formatPrice(price: number | null, pair: string): string {
   if (currency === "NIS" || currency === "ILS") {
     return `${price.toLocaleString("he-IL", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ILS`;
   }
+  if (currency === "EUR") {
+    return `\u20AC${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
   return `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function HealthBadge({ exchange }: { exchange: CcxtExchangeData }) {
+function HealthBadge({ exchange }: { exchange: ExchangeData }) {
   if (exchange.status === "ok" && exchange.healthStatus === "healthy") {
     return (
       <span className="flex items-center gap-1 text-[10px] text-crypto-green">
@@ -57,7 +60,7 @@ function HealthBadge({ exchange }: { exchange: CcxtExchangeData }) {
 }
 
 interface ExchangeCardViewProps {
-  exchanges: CcxtExchangeData[];
+  exchanges: ExchangeData[];
   investmentAmount: number;
 }
 
@@ -106,7 +109,7 @@ export function ExchangeCardView({
 }
 
 interface ExchangeCardProps {
-  exchange: CcxtExchangeData;
+  exchange: ExchangeData;
   bestPrice: number | null;
   investmentAmount: number;
 }
@@ -124,11 +127,13 @@ function ExchangeCard({
   const isILS =
     exchange.tradingPair.includes("ILS") ||
     exchange.tradingPair.includes("NIS");
+  const isEUR = exchange.tradingPair.includes("EUR");
   const priceDiff =
     exchange.price != null &&
     bestPrice != null &&
     bestPrice > 0 &&
-    !isILS
+    !isILS &&
+    !isEUR
       ? ((exchange.price - bestPrice) / bestPrice) * 100
       : null;
 
@@ -175,6 +180,13 @@ function ExchangeCard({
             <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">
               {exchange.region}
             </span>
+            <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+              exchange.platformType === "broker"
+                ? "bg-crypto-purple/10 text-crypto-purple"
+                : "bg-muted text-muted-foreground"
+            }`}>
+              {exchange.platformType === "broker" ? "Broker" : "Exchange"}
+            </span>
           </p>
         </div>
         {exchange.feePageUrl && (
@@ -188,6 +200,20 @@ function ExchangeCard({
           </a>
         )}
       </div>
+
+      {/* Deposit Methods */}
+      {exchange.depositMethods.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {exchange.depositMethods.map((method) => (
+            <span
+              key={method}
+              className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border/50"
+            >
+              {method}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Price */}
       <div className="bg-muted rounded-lg p-4">
