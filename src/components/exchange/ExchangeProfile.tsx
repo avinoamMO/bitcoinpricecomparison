@@ -307,6 +307,53 @@ export function ExchangeProfile({ exchange, profile }: ExchangeProfileProps) {
         </div>
       </div>
 
+      {/* Related Articles */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Learn More</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Link
+            href="/learn/compare-crypto-exchange-fees"
+            className="text-sm text-muted-foreground hover:text-gold transition-colors flex items-center gap-1"
+          >
+            <ArrowRight className="h-3 w-3 flex-shrink-0" />
+            How to Compare Exchange Fees
+          </Link>
+          {exchange.slug === "binance" || exchange.slug === "coinbase" ? (
+            <Link
+              href="/learn/binance-vs-coinbase-fees"
+              className="text-sm text-muted-foreground hover:text-gold transition-colors flex items-center gap-1"
+            >
+              <ArrowRight className="h-3 w-3 flex-shrink-0" />
+              Binance vs Coinbase Fees
+            </Link>
+          ) : (
+            <Link
+              href="/learn/best-crypto-exchanges-beginners"
+              className="text-sm text-muted-foreground hover:text-gold transition-colors flex items-center gap-1"
+            >
+              <ArrowRight className="h-3 w-3 flex-shrink-0" />
+              Best Exchanges for Beginners
+            </Link>
+          )}
+          <Link
+            href="/learn/crypto-withdrawal-fees-explained"
+            className="text-sm text-muted-foreground hover:text-gold transition-colors flex items-center gap-1"
+          >
+            <ArrowRight className="h-3 w-3 flex-shrink-0" />
+            Understanding Withdrawal Fees
+          </Link>
+          {exchange.isIsraeli && (
+            <Link
+              href="/learn/israeli-crypto-exchanges-bit2c-vs-bits-of-gold"
+              className="text-sm text-muted-foreground hover:text-gold transition-colors flex items-center gap-1"
+            >
+              <ArrowRight className="h-3 w-3 flex-shrink-0" />
+              Bit2C vs Bits of Gold Compared
+            </Link>
+          )}
+        </div>
+      </div>
+
       {/* CTA Section */}
       <div className="rounded-xl border border-gold/20 bg-gold/5 p-8 text-center">
         <h2 className="text-2xl font-bold text-foreground mb-3">

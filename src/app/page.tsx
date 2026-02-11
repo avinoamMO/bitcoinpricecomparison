@@ -1,6 +1,9 @@
 import { ComparisonDashboard } from "@/components/comparison/ComparisonDashboard";
 import { AdBanner } from "@/components/ads";
 import { FAQ } from "@/components/comparison/FAQ";
+import Link from "next/link";
+import { articles } from "@/data/articles";
+import { ArrowRight, BookOpen, Clock } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -46,6 +49,43 @@ export default function HomePage() {
               We dynamically compare 100+ cryptocurrency exchanges in real time, including featured exchanges Binance, Coinbase, Kraken, Bybit, OKX, and Israeli exchanges Bit2C and Bits of Gold. Filter by region, search by name, and sort by price, fees, or liquidity.
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Learning Center Preview */}
+      <section className="mt-16 max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-gold" />
+            <h2 className="text-2xl font-bold text-foreground">Learn More</h2>
+          </div>
+          <Link
+            href="/learn"
+            className="text-sm text-gold hover:text-gold-light transition-colors flex items-center gap-1"
+          >
+            View all articles
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {articles.slice(0, 3).map((article) => (
+            <Link
+              key={article.slug}
+              href={`/learn/${article.slug}`}
+              className="group rounded-xl border border-border bg-card p-5 hover:border-gold/30 transition-colors"
+            >
+              <h3 className="font-semibold text-foreground text-sm group-hover:text-gold transition-colors mb-2 line-clamp-2">
+                {article.title}
+              </h3>
+              <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                {article.description}
+              </p>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {article.readTime} min read
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
 
