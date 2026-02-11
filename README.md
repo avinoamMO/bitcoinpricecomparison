@@ -6,6 +6,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![Tests](https://img.shields.io/badge/tests-28%20passing-green)
 ![License](https://img.shields.io/badge/license-MIT-gray)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel-black?logo=vercel)](https://bitcoinpricecomparison.vercel.app)
 
 ## Why CryptoROI?
 
