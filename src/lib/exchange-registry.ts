@@ -301,7 +301,7 @@ const COUNTRY_NAMES: Record<string, string> = {
 // ─── Known Defunct/Problematic Exchanges ────────────────────────────
 
 /**
- * CCXT exchange IDs to skip during dynamic discovery.
+ * Exchange IDs to skip during dynamic discovery.
  * These are defunct, deprecated, require authentication for all calls,
  * or are known to be unreliable.
  */

@@ -52,15 +52,15 @@ describe("ExchangeCache", () => {
   });
 
   it("clears entries by prefix", () => {
-    exchangeCache.set("ccxt:price:binance", 97000);
-    exchangeCache.set("ccxt:price:kraken", 97050);
-    exchangeCache.set("ccxt:fees:binance", { taker: 0.1 });
+    exchangeCache.set("mkt:price:binance", 97000);
+    exchangeCache.set("mkt:price:kraken", 97050);
+    exchangeCache.set("mkt:fees:binance", { taker: 0.1 });
     exchangeCache.set("other:key", "keep");
 
-    exchangeCache.clearPrefix("ccxt:price:");
-    expect(exchangeCache.get("ccxt:price:binance", 60000)).toBeNull();
-    expect(exchangeCache.get("ccxt:price:kraken", 60000)).toBeNull();
-    expect(exchangeCache.get("ccxt:fees:binance", 60000)).toEqual({ taker: 0.1 });
+    exchangeCache.clearPrefix("mkt:price:");
+    expect(exchangeCache.get("mkt:price:binance", 60000)).toBeNull();
+    expect(exchangeCache.get("mkt:price:kraken", 60000)).toBeNull();
+    expect(exchangeCache.get("mkt:fees:binance", 60000)).toEqual({ taker: 0.1 });
     expect(exchangeCache.get("other:key", 60000)).toBe("keep");
   });
 

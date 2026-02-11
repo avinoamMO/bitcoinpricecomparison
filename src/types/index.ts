@@ -233,7 +233,3 @@ export interface MarketDataApiResponse {
   };
 }
 
-// ─── Backward-compatible aliases ─────────────────────────────────────
-export type CcxtExchangeData = ExchangeData;
-export type CcxtFeeData = FeeData;
-export type CcxtApiResponse = MarketDataApiResponse;

@@ -42,7 +42,7 @@ export default function HomePage() {
           <div>
             <h2 className="text-2xl font-bold text-foreground mb-4">Exchanges We Compare</h2>
             <p className="text-muted-foreground leading-relaxed">
-              We dynamically compare 100+ cryptocurrency exchanges using CCXT, including featured exchanges Binance, Coinbase, Kraken, Bybit, OKX, and Israeli exchanges Bit2C and Bits of Gold. Filter by region, search by name, and sort by price, fees, or liquidity.
+              We dynamically compare 100+ cryptocurrency exchanges in real time, including featured exchanges Binance, Coinbase, Kraken, Bybit, OKX, and Israeli exchanges Bit2C and Bits of Gold. Filter by region, search by name, and sort by price, fees, or liquidity.
             </p>
           </div>
         </div>

@@ -1,9 +1,9 @@
 "use client";
 
-import { CcxtExchangeData } from "@/types";
+import { ExchangeData } from "@/types";
 
 interface FeeSummaryBarProps {
-  exchanges: CcxtExchangeData[];
+  exchanges: ExchangeData[];
 }
 
 interface WinnerInfo {

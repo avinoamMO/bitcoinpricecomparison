@@ -3,7 +3,7 @@
  */
 
 /**
- * Tests for the CCXT service module.
+ * Tests for the exchange service module.
  * Tests configuration, type structure, dynamic discovery, and registry.
  */
 import { EXCHANGE_CONFIGS } from "@/lib/exchange-service";
@@ -17,11 +17,11 @@ import {
 } from "@/lib/exchange-registry";
 import { exchangeHealth } from "@/lib/exchange-health";
 import {
-  CcxtFeeData,
-  CcxtExchangeData,
+  FeeData,
+  ExchangeData,
   OrderBookData,
   FeeTier,
-  CcxtApiResponse,
+  MarketDataApiResponse,
   ExchangeRegion,
   ASSET_CONFIG,
 } from "@/types";
@@ -317,9 +317,9 @@ describe("Exchange Health Monitor", () => {
   });
 });
 
-describe("CCXT Type Structures", () => {
-  it("CcxtFeeData has correct shape", () => {
-    const fee: CcxtFeeData = {
+describe("Exchange Type Structures", () => {
+  it("FeeData has correct shape", () => {
+    const fee: FeeData = {
       takerFee: 0.1,
       makerFee: 0.1,
       withdrawalFee: 0.0001,
@@ -348,8 +348,8 @@ describe("CCXT Type Structures", () => {
     expect(ob.rawBids).toHaveLength(2);
   });
 
-  it("CcxtExchangeData handles new fields", () => {
-    const exchange: CcxtExchangeData = {
+  it("ExchangeData handles new fields", () => {
+    const exchange: ExchangeData = {
       id: "test",
       name: "Test Exchange",
       country: "Test",
@@ -395,8 +395,8 @@ describe("CCXT Type Structures", () => {
     expect(exchange.depositMethods).toEqual([]);
   });
 
-  it("CcxtExchangeData supports featured exchange fields", () => {
-    const exchange: CcxtExchangeData = {
+  it("ExchangeData supports featured exchange fields", () => {
+    const exchange: ExchangeData = {
       id: "binance",
       name: "Binance",
       country: "Global (Cayman Islands)",
@@ -449,8 +449,8 @@ describe("CCXT Type Structures", () => {
     expect(tier.maxVolume).toBe(1000000);
   });
 
-  it("CcxtApiResponse has correct shape with new fields", () => {
-    const response: CcxtApiResponse = {
+  it("MarketDataApiResponse has correct shape with new fields", () => {
+    const response: MarketDataApiResponse = {
       exchanges: [],
       timestamp: new Date().toISOString(),
       totalDiscovered: 120,
