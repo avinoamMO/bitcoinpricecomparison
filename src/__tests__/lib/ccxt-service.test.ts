@@ -330,9 +330,13 @@ describe("CCXT Type Structures", () => {
       spreadPercent: 0.0206,
       bidDepth: 5.5,
       askDepth: 4.2,
+      rawAsks: [[97010, 0.5], [97020, 1.0]],
+      rawBids: [[96990, 0.5], [96980, 1.0]],
     };
     expect(ob.spreadUSD).toBe(20);
     expect(ob.bidDepth).toBe(5.5);
+    expect(ob.rawAsks).toHaveLength(2);
+    expect(ob.rawBids).toHaveLength(2);
   });
 
   it("CcxtExchangeData handles new fields", () => {
@@ -340,6 +344,7 @@ describe("CCXT Type Structures", () => {
       id: "test",
       name: "Test Exchange",
       country: "Test",
+      countries: ["US"],
       region: "Global",
       israeliExchange: false,
       featured: false,
@@ -354,6 +359,7 @@ describe("CCXT Type Structures", () => {
         feeTiers: [],
       },
       orderBook: null,
+      simulation: null,
       feePageUrl: "https://example.com",
       websiteUrl: "https://example.com",
       fetchedAt: new Date().toISOString(),
@@ -364,10 +370,12 @@ describe("CCXT Type Structures", () => {
     };
     expect(exchange.price).toBeNull();
     expect(exchange.orderBook).toBeNull();
+    expect(exchange.simulation).toBeNull();
     expect(exchange.status).toBe("error");
     expect(exchange.region).toBe("Global");
     expect(exchange.featured).toBe(false);
     expect(exchange.healthStatus).toBe("unknown");
+    expect(exchange.countries).toEqual(["US"]);
   });
 
   it("CcxtExchangeData supports featured exchange fields", () => {
@@ -375,6 +383,7 @@ describe("CCXT Type Structures", () => {
       id: "binance",
       name: "Binance",
       country: "Global (Cayman Islands)",
+      countries: ["KY"],
       region: "Global",
       israeliExchange: false,
       featured: true,
@@ -389,6 +398,7 @@ describe("CCXT Type Structures", () => {
         feeTiers: [],
       },
       orderBook: null,
+      simulation: null,
       feePageUrl: "https://www.binance.com/en/fee/schedule",
       websiteUrl: "https://www.binance.com",
       affiliateUrl: "https://www.binance.com/en/register?ref=CRYPTOROI",

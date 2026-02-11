@@ -1,7 +1,7 @@
 "use client";
 
 import { CcxtExchangeData } from "@/types";
-import { ExternalLink, Star, Wifi, WifiOff, AlertTriangle } from "lucide-react";
+import { ExternalLink, Star, Wifi, WifiOff, AlertTriangle, TrendingDown } from "lucide-react";
 
 interface CcxtComparisonTableProps {
   exchanges: CcxtExchangeData[];
@@ -60,6 +60,14 @@ export function CcxtComparisonTable({
     ? Math.min(...usdExchanges.map((e) => e.price!))
     : null;
 
+  // Find best simulation result for ROI comparison
+  const exchangesWithSim = exchanges.filter((e) => e.simulation && e.simulation.btcReceived > 0);
+  const bestBtcReceived = exchangesWithSim.length
+    ? Math.max(...exchangesWithSim.map((e) => e.simulation!.btcReceived))
+    : null;
+
+  const hasSimulation = exchangesWithSim.length > 0;
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm text-left border-collapse">
@@ -69,12 +77,25 @@ export function CcxtComparisonTable({
             <th className="py-3 px-3">Exchange</th>
             <th className="py-3 px-3 text-right">Price</th>
             <th className="py-3 px-3 text-right">Taker</th>
-            <th className="py-3 px-3 text-right">Maker</th>
             <th className="py-3 px-3 text-right">Spread</th>
-            <th className="py-3 px-3 text-right hidden md:table-cell">BTC Withdrawal</th>
-            <th className="py-3 px-3 text-right">
-              Cost on ${investmentAmount.toLocaleString()}
-            </th>
+            {hasSimulation && (
+              <>
+                <th className="py-3 px-3 text-right hidden lg:table-cell">
+                  Avg Fill
+                </th>
+                <th className="py-3 px-3 text-right hidden md:table-cell">
+                  Slippage
+                </th>
+                <th className="py-3 px-3 text-right">
+                  BTC Received
+                </th>
+              </>
+            )}
+            {!hasSimulation && (
+              <th className="py-3 px-3 text-right">
+                Cost on ${investmentAmount.toLocaleString()}
+              </th>
+            )}
             <th className="py-3 px-3 text-center">Status</th>
             <th className="py-3 px-3"></th>
           </tr>
@@ -95,6 +116,16 @@ export function CcxtComparisonTable({
                 ? ((ex.price - bestUSDPrice) / bestUSDPrice) * 100
                 : null;
 
+            const sim = ex.simulation;
+            const btcDiff =
+              sim && bestBtcReceived && sim.btcReceived > 0
+                ? ((bestBtcReceived - sim.btcReceived) / bestBtcReceived) * 100
+                : null;
+            const isBestBtc =
+              sim && bestBtcReceived
+                ? Math.abs(sim.btcReceived - bestBtcReceived) < 0.00000001
+                : false;
+
             const linkUrl = ex.affiliateUrl || ex.websiteUrl || ex.feePageUrl;
 
             return (
@@ -102,7 +133,9 @@ export function CcxtComparisonTable({
                 key={ex.id}
                 className={`border-b border-border/50 hover:bg-muted/50 transition-colors ${
                   ex.featured ? "bg-gold/[0.02]" : ""
-                } ${ex.israeliExchange ? "bg-crypto-blue/5" : ""}`}
+                } ${ex.israeliExchange ? "bg-crypto-blue/5" : ""} ${
+                  isBestBtc ? "bg-crypto-green/5" : ""
+                }`}
               >
                 <td className="py-3 px-3 font-mono text-muted-foreground">
                   <div className="flex items-center gap-1">
@@ -149,22 +182,100 @@ export function CcxtComparisonTable({
                 <td className="py-3 px-3 text-right font-mono text-gold">
                   {ex.fees.takerFee}%
                 </td>
-                <td className="py-3 px-3 text-right font-mono text-crypto-green">
-                  {ex.fees.makerFee}%
-                </td>
                 <td className="py-3 px-3 text-right font-mono text-crypto-purple">
                   {ex.orderBook
                     ? `${ex.orderBook.spreadPercent.toFixed(4)}%`
                     : "N/A"}
                 </td>
-                <td className="py-3 px-3 text-right font-mono text-gold-light hidden md:table-cell">
-                  {ex.fees.withdrawalFeeBTC != null
-                    ? `${ex.fees.withdrawalFeeBTC} BTC`
-                    : "N/A"}
-                </td>
-                <td className="py-3 px-3 text-right font-mono font-bold text-foreground">
-                  {ex.price != null ? `$${totalCost.toFixed(2)}` : "N/A"}
-                </td>
+
+                {hasSimulation && (
+                  <>
+                    {/* Average fill price from order book simulation */}
+                    <td className="py-3 px-3 text-right font-mono hidden lg:table-cell">
+                      {sim && sim.avgFillPrice > 0 ? (
+                        <span className="text-foreground">
+                          ${sim.avgFillPrice.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">N/A</span>
+                      )}
+                    </td>
+
+                    {/* Slippage */}
+                    <td className="py-3 px-3 text-right font-mono hidden md:table-cell">
+                      {sim && sim.slippagePercent > 0 ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <TrendingDown className="h-3 w-3 text-crypto-red" />
+                          <span
+                            className={
+                              sim.slippagePercent > 0.5
+                                ? "text-crypto-red"
+                                : sim.slippagePercent > 0.1
+                                  ? "text-gold"
+                                  : "text-crypto-green"
+                            }
+                          >
+                            {sim.slippagePercent.toFixed(4)}%
+                          </span>
+                        </div>
+                      ) : sim ? (
+                        <span className="text-crypto-green">0%</span>
+                      ) : (
+                        <span className="text-muted-foreground">N/A</span>
+                      )}
+                      {sim && !sim.fullyFilled && (
+                        <div className="text-[10px] text-crypto-red">
+                          Partial fill
+                        </div>
+                      )}
+                    </td>
+
+                    {/* BTC Received (the key metric) */}
+                    <td className="py-3 px-3 text-right font-mono">
+                      {sim && sim.btcReceived > 0 ? (
+                        <div>
+                          <div
+                            className={`font-bold ${
+                              isBestBtc
+                                ? "text-crypto-green"
+                                : "text-foreground"
+                            }`}
+                          >
+                            {sim.btcReceived.toFixed(8)} BTC
+                          </div>
+                          {btcDiff != null && btcDiff > 0 && (
+                            <div className="text-[10px] text-crypto-red">
+                              -{btcDiff.toFixed(4)}% vs best
+                            </div>
+                          )}
+                          {isBestBtc && (
+                            <div className="text-[10px] text-crypto-green font-medium">
+                              Best Deal
+                            </div>
+                          )}
+                          {sim && !sim.fullyFilled && (
+                            <div className="text-[10px] text-crypto-red">
+                              Book exhausted ($
+                              {sim.amountUnfilled.toFixed(0)} unfilled)
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">N/A</span>
+                      )}
+                    </td>
+                  </>
+                )}
+
+                {!hasSimulation && (
+                  <td className="py-3 px-3 text-right font-mono font-bold text-foreground">
+                    {ex.price != null ? `$${totalCost.toFixed(2)}` : "N/A"}
+                  </td>
+                )}
+
                 <td className="py-3 px-3 text-center">
                   <HealthIndicator exchange={ex} />
                 </td>
@@ -190,6 +301,24 @@ export function CcxtComparisonTable({
           })}
         </tbody>
       </table>
+
+      {/* Simulation explanation */}
+      {hasSimulation && (
+        <div className="mt-3 px-3 py-2 rounded-lg bg-muted/50 border border-border/50">
+          <p className="text-xs text-muted-foreground">
+            <strong className="text-foreground">Market Order Simulation:</strong>{" "}
+            BTC Received is calculated by walking the real-time order book — simulating
+            what happens if you place a ${investmentAmount.toLocaleString()} market buy
+            right now. Includes slippage from consuming multiple price levels.
+            {exchanges.some((e) => e.simulation && !e.simulation.fullyFilled) && (
+              <span className="text-crypto-red ml-1">
+                Some exchanges lack sufficient liquidity at this amount.
+              </span>
+            )}
+          </p>
+        </div>
+      )}
+
       {exchanges.some(
         (e) =>
           e.tradingPair.includes("ILS") || e.tradingPair.includes("NIS")

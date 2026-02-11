@@ -1,7 +1,8 @@
 "use client";
 
-import { ExchangeRegion } from "@/types";
-import { Search, Filter } from "lucide-react";
+import { useState } from "react";
+import { CcxtExchangeData, ExchangeRegion } from "@/types";
+import { Search, Filter, ChevronDown, ChevronUp, Check, X } from "lucide-react";
 
 export type SortOption = "best_price" | "lowest_fees" | "alphabetical" | "highest_volume";
 
@@ -26,6 +27,9 @@ interface ExchangeFiltersProps {
   onSearchChange: (query: string) => void;
   selectedRegion: ExchangeRegion | "All";
   onRegionChange: (region: ExchangeRegion | "All") => void;
+  selectedCountry: string;
+  onCountryChange: (country: string) => void;
+  availableCountries: string[];
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
   showFeaturedOnly: boolean;
@@ -33,6 +37,12 @@ interface ExchangeFiltersProps {
   totalExchanges: number;
   visibleExchanges: number;
   responsiveExchanges: number;
+  // Exchange selection
+  allExchanges: CcxtExchangeData[];
+  selectedExchangeIds: Set<string>;
+  onToggleExchange: (id: string) => void;
+  onSelectAllVisible: () => void;
+  onClearSelection: () => void;
 }
 
 export function ExchangeFilters({
@@ -40,6 +50,9 @@ export function ExchangeFilters({
   onSearchChange,
   selectedRegion,
   onRegionChange,
+  selectedCountry,
+  onCountryChange,
+  availableCountries,
   sortBy,
   onSortChange,
   showFeaturedOnly,
@@ -47,7 +60,23 @@ export function ExchangeFilters({
   totalExchanges,
   visibleExchanges,
   responsiveExchanges,
+  allExchanges,
+  selectedExchangeIds,
+  onToggleExchange,
+  onSelectAllVisible,
+  onClearSelection,
 }: ExchangeFiltersProps) {
+  const [showExchangePicker, setShowExchangePicker] = useState(false);
+  const [exchangeSearch, setExchangeSearch] = useState("");
+
+  const filteredExchanges = exchangeSearch.trim()
+    ? allExchanges.filter(
+        (e) =>
+          e.name.toLowerCase().includes(exchangeSearch.toLowerCase()) ||
+          e.id.toLowerCase().includes(exchangeSearch.toLowerCase())
+      )
+    : allExchanges;
+
   return (
     <div className="space-y-3">
       {/* Stats bar */}
@@ -55,6 +84,11 @@ export function ExchangeFilters({
         <span>
           Showing {visibleExchanges} of {totalExchanges} exchanges
           ({responsiveExchanges} live)
+          {selectedExchangeIds.size > 0 && (
+            <span className="ml-2 text-gold">
+              {selectedExchangeIds.size} selected
+            </span>
+          )}
         </span>
         <button
           onClick={onToggleFeatured}
@@ -68,7 +102,7 @@ export function ExchangeFilters({
         </button>
       </div>
 
-      {/* Search + Sort row */}
+      {/* Search + Sort + Country row */}
       <div className="flex flex-col sm:flex-row gap-3">
         {/* Search input */}
         <div className="relative flex-1">
@@ -82,6 +116,21 @@ export function ExchangeFilters({
             aria-label="Search exchanges"
           />
         </div>
+
+        {/* Country dropdown */}
+        <select
+          value={selectedCountry}
+          onChange={(e) => onCountryChange(e.target.value)}
+          className="h-9 px-3 bg-muted border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 appearance-none cursor-pointer"
+          aria-label="Filter by country"
+        >
+          <option value="All">All Countries</option>
+          {availableCountries.map((country) => (
+            <option key={country} value={country}>
+              {country}
+            </option>
+          ))}
+        </select>
 
         {/* Sort dropdown */}
         <div className="flex items-center gap-2">
@@ -116,7 +165,127 @@ export function ExchangeFilters({
             {region.label}
           </button>
         ))}
+
+        {/* Exchange picker toggle */}
+        <button
+          onClick={() => setShowExchangePicker(!showExchangePicker)}
+          className={`ml-auto px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${
+            selectedExchangeIds.size > 0
+              ? "bg-gold/20 text-gold border border-gold/30"
+              : "bg-muted text-muted-foreground border border-border hover:border-gold/30"
+          }`}
+        >
+          {showExchangePicker ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )}
+          {selectedExchangeIds.size > 0
+            ? `${selectedExchangeIds.size} Exchanges Selected`
+            : "Select Exchanges"}
+        </button>
       </div>
+
+      {/* Exchange Selection Panel */}
+      {showExchangePicker && (
+        <div className="rounded-xl border border-border bg-card/50 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">
+              Pick Exchanges to Compare
+            </h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onSelectAllVisible}
+                className="text-xs text-gold hover:text-gold-light transition-colors"
+              >
+                Select All
+              </button>
+              <span className="text-muted-foreground text-xs">|</span>
+              <button
+                onClick={onClearSelection}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          {/* Search within picker */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              value={exchangeSearch}
+              onChange={(e) => setExchangeSearch(e.target.value)}
+              placeholder="Find exchange..."
+              className="w-full h-8 pl-8 pr-4 bg-muted border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
+            />
+          </div>
+
+          {/* Selected exchanges summary */}
+          {selectedExchangeIds.size > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from(selectedExchangeIds).map((id) => {
+                const ex = allExchanges.find((e) => e.id === id);
+                return (
+                  <span
+                    key={id}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gold/10 text-gold text-xs border border-gold/20"
+                  >
+                    {ex?.name || id}
+                    <button
+                      onClick={() => onToggleExchange(id)}
+                      className="hover:text-gold-light"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Exchange checkbox grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 max-h-60 overflow-y-auto">
+            {filteredExchanges.map((ex) => {
+              const isSelected = selectedExchangeIds.has(ex.id);
+              return (
+                <button
+                  key={ex.id}
+                  onClick={() => onToggleExchange(ex.id)}
+                  className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-all text-left ${
+                    isSelected
+                      ? "bg-gold/10 text-gold border border-gold/30"
+                      : "bg-muted text-muted-foreground border border-border hover:border-gold/20 hover:text-foreground"
+                  }`}
+                >
+                  <span
+                    className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                      isSelected
+                        ? "bg-gold border-gold"
+                        : "border-border"
+                    }`}
+                  >
+                    {isSelected && (
+                      <Check className="h-3 w-3 text-black" />
+                    )}
+                  </span>
+                  <span className="truncate">{ex.name}</span>
+                  {ex.featured && (
+                    <span className="text-[9px] text-gold">★</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {filteredExchanges.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-2">
+              No exchanges match your search
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

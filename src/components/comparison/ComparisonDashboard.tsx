@@ -53,9 +53,11 @@ export function ComparisonDashboard() {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<ExchangeRegion | "All">("All");
+  const [selectedCountry, setSelectedCountry] = useState<string>("All");
   const [sortBy, setSortBy] = useState<SortOption>("best_price");
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [selectedExchangeIds, setSelectedExchangeIds] = useState<Set<string>>(new Set());
 
   const fetchData = useCallback(async () => {
     if (amount <= 0) return;
@@ -73,7 +75,7 @@ export function ComparisonDashboard() {
             mode: "buy",
           })}`
         ),
-        fetch("/api/ccxt"),
+        fetch(`/api/ccxt?amount=${encodeURIComponent(String(amount))}`),
       ]);
 
       // Process comparison results
@@ -125,6 +127,38 @@ export function ComparisonDashboard() {
     return () => clearInterval(i);
   }, [fetchData]);
 
+  // ─── Available Countries (derived from exchange data) ──────────────
+
+  const availableCountries = useMemo(() => {
+    const countrySet = new Set<string>();
+    for (const ex of ccxtData) {
+      if (ex.country) countrySet.add(ex.country);
+    }
+    return Array.from(countrySet).sort();
+  }, [ccxtData]);
+
+  // ─── Exchange Selection Helpers ───────────────────────────────────
+
+  const toggleExchange = useCallback((exchangeId: string) => {
+    setSelectedExchangeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(exchangeId)) {
+        next.delete(exchangeId);
+      } else {
+        next.add(exchangeId);
+      }
+      return next;
+    });
+  }, []);
+
+  const selectAllVisible = useCallback((exchangeIds: string[]) => {
+    setSelectedExchangeIds(new Set(exchangeIds));
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedExchangeIds(new Set());
+  }, []);
+
   // ─── Filtering & Sorting Logic ─────────────────────────────────────
 
   const filteredCcxtData = useMemo(() => {
@@ -143,6 +177,16 @@ export function ComparisonDashboard() {
       filtered = filtered.filter((e) => e.region === selectedRegion);
     }
 
+    // Country filter
+    if (selectedCountry !== "All") {
+      filtered = filtered.filter((e) => e.country === selectedCountry);
+    }
+
+    // Manual exchange selection filter
+    if (selectedExchangeIds.size > 0) {
+      filtered = filtered.filter((e) => selectedExchangeIds.has(e.id));
+    }
+
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -158,10 +202,8 @@ export function ComparisonDashboard() {
     switch (sortBy) {
       case "best_price":
         filtered.sort((a, b) => {
-          // Featured first
           if (a.featured && !b.featured) return -1;
           if (!a.featured && b.featured) return 1;
-          // Then by price (ascending, nulls last)
           if (a.price == null && b.price == null) return 0;
           if (a.price == null) return 1;
           if (b.price == null) return -1;
@@ -200,7 +242,7 @@ export function ComparisonDashboard() {
     }
 
     return filtered;
-  }, [ccxtData, searchQuery, selectedRegion, sortBy, showFeaturedOnly]);
+  }, [ccxtData, searchQuery, selectedRegion, selectedCountry, sortBy, showFeaturedOnly, selectedExchangeIds]);
 
   // Pagination
   const displayedExchanges = useMemo(() => {
@@ -357,6 +399,9 @@ export function ComparisonDashboard() {
             onSearchChange={setSearchQuery}
             selectedRegion={selectedRegion}
             onRegionChange={setSelectedRegion}
+            selectedCountry={selectedCountry}
+            onCountryChange={setSelectedCountry}
+            availableCountries={availableCountries}
             sortBy={sortBy}
             onSortChange={setSortBy}
             showFeaturedOnly={showFeaturedOnly}
@@ -364,6 +409,15 @@ export function ComparisonDashboard() {
             totalExchanges={ccxtData.length}
             visibleExchanges={filteredCcxtData.length}
             responsiveExchanges={totalResponsive}
+            allExchanges={ccxtData.filter((e) => e.status === "ok" || e.featured)}
+            selectedExchangeIds={selectedExchangeIds}
+            onToggleExchange={toggleExchange}
+            onSelectAllVisible={() =>
+              selectAllVisible(
+                filteredCcxtData.map((e) => e.id)
+              )
+            }
+            onClearSelection={clearSelection}
           />
         </div>
       )}

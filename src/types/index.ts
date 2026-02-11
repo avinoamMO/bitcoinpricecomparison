@@ -116,8 +116,27 @@ export interface OrderBookData {
   bestAsk: number;
   spreadUSD: number;
   spreadPercent: number;
-  bidDepth: number;             // total BTC in top 10 bid levels
-  askDepth: number;             // total BTC in top 10 ask levels
+  bidDepth: number;             // total BTC in bid levels
+  askDepth: number;             // total BTC in ask levels
+  rawAsks: [number, number][];  // [price, quantity] pairs sorted by price ascending
+  rawBids: [number, number][];  // [price, quantity] pairs sorted by price descending
+}
+
+export interface MarketSimulationResult {
+  /** Total BTC that would be received after walking the order book */
+  btcReceived: number;
+  /** Weighted average fill price in USD per BTC */
+  avgFillPrice: number;
+  /** How much worse the avg fill is vs. the best ask (percentage) */
+  slippagePercent: number;
+  /** Total fiat spent (may be less than requested if book is exhausted) */
+  totalSpent: number;
+  /** Whether the order book had enough liquidity for the full amount */
+  fullyFilled: boolean;
+  /** How many order book levels were consumed */
+  levelsConsumed: number;
+  /** Amount left unfilled (0 if fully filled) */
+  amountUnfilled: number;
 }
 
 export type ExchangeRegion = "Global" | "Americas" | "Europe" | "Asia" | "Israel" | "Other";
@@ -128,6 +147,7 @@ export interface CcxtExchangeData {
   id: string;
   name: string;
   country: string;
+  countries: string[];
   region: ExchangeRegion;
   israeliExchange: boolean;
   featured: boolean;
@@ -135,6 +155,7 @@ export interface CcxtExchangeData {
   tradingPair: string;
   fees: CcxtFeeData;
   orderBook: OrderBookData | null;
+  simulation: MarketSimulationResult | null;
   feePageUrl: string;
   websiteUrl: string;
   affiliateUrl?: string;

@@ -174,7 +174,8 @@ async function fetchOrderBookData(
   try {
     if (!exchange.has?.fetchOrderBook) return null;
 
-    const ob = await exchange.fetchOrderBook(activePair, 10);
+    // Fetch 100 levels for market order simulation depth
+    const ob = await exchange.fetchOrderBook(activePair, 100);
     if (!ob.bids.length || !ob.asks.length) return null;
 
     const topBid = ob.bids[0];
@@ -190,6 +191,16 @@ async function fetchOrderBookData(
     const bidDepth = ob.bids.reduce((sum, level) => sum + (level[1] ?? 0), 0);
     const askDepth = ob.asks.reduce((sum, level) => sum + (level[1] ?? 0), 0);
 
+    // Store raw levels for market order simulation
+    const rawAsks: [number, number][] = ob.asks.map((level) => [
+      level[0] as number,
+      level[1] as number,
+    ]);
+    const rawBids: [number, number][] = ob.bids.map((level) => [
+      level[0] as number,
+      level[1] as number,
+    ]);
+
     const result: OrderBookData = {
       bestBid,
       bestAsk,
@@ -197,6 +208,8 @@ async function fetchOrderBookData(
       spreadPercent: Math.round(spreadPercent * 10000) / 10000,
       bidDepth: Math.round(bidDepth * 10000) / 10000,
       askDepth: Math.round(askDepth * 10000) / 10000,
+      rawAsks,
+      rawBids,
     };
     exchangeCache.set(cacheKey, result);
     return result;
@@ -319,6 +332,7 @@ async function fetchExchangeData(
       id: discovered.id,
       name: featuredConfig?.name ?? discovered.name,
       country: featuredConfig?.country ?? formatCountry(discovered.countries),
+      countries: discovered.countries,
       region: featuredConfig?.region ?? detectRegion(discovered.countries),
       israeliExchange: featuredConfig?.israeliExchange ?? false,
       featured: isFeatured,
@@ -326,6 +340,7 @@ async function fetchExchangeData(
       tradingPair: activePair,
       fees,
       orderBook: orderBookResult,
+      simulation: null,
       feePageUrl: featuredConfig?.feePageUrl ?? "",
       websiteUrl: featuredConfig?.websiteUrl ?? `https://${discovered.id}.com`,
       affiliateUrl: featuredConfig?.affiliateUrl,
@@ -351,6 +366,7 @@ function buildErrorResult(
     id: discovered.id,
     name: featuredConfig?.name ?? discovered.name,
     country: featuredConfig?.country ?? formatCountry(discovered.countries),
+    countries: discovered.countries,
     region: featuredConfig?.region ?? detectRegion(discovered.countries),
     israeliExchange: featuredConfig?.israeliExchange ?? false,
     featured: !!featuredConfig,
@@ -358,6 +374,7 @@ function buildErrorResult(
     tradingPair: featuredConfig?.tradingPair ?? "BTC/USDT",
     fees: extractFees(null, featuredConfig),
     orderBook: null,
+    simulation: null,
     feePageUrl: featuredConfig?.feePageUrl ?? "",
     websiteUrl: featuredConfig?.websiteUrl ?? `https://${discovered.id}.com`,
     affiliateUrl: featuredConfig?.affiliateUrl,
@@ -378,6 +395,7 @@ function getBitsOfGoldData(): CcxtExchangeData {
     id: "bitsofgold",
     name: "Bits of Gold",
     country: "Israel",
+    countries: ["IL"],
     region: "Israel",
     israeliExchange: true,
     featured: true,
@@ -394,6 +412,7 @@ function getBitsOfGoldData(): CcxtExchangeData {
       ],
     },
     orderBook: null,
+    simulation: null,
     feePageUrl: config.feePageUrl,
     websiteUrl: config.websiteUrl,
     affiliateUrl: config.affiliateUrl,
