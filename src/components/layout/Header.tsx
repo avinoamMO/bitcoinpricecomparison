@@ -29,7 +29,7 @@ export function Header() {
               Compare
             </Link>
             <Link
-              href="/exchanges/binance"
+              href="/exchanges"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Exchanges
@@ -68,7 +68,7 @@ export function Header() {
                 Compare
               </Link>
               <Link
-                href="/exchanges/binance"
+                href="/exchanges"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
                 onClick={() => setMobileMenuOpen(false)}
               >

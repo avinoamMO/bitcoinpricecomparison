@@ -32,14 +32,14 @@ export function Footer() {
               Exchanges
             </h4>
             <ul className="space-y-2">
-              {["binance", "coinbase", "kraken", "bybit", "okx", "bit2c", "bits-of-gold"].map(
+              {["binance", "coinbase", "kraken", "bybit", "okx", "kucoin", "gate-io", "bitstamp", "bit2c", "bits-of-gold"].map(
                 (slug) => (
                   <li key={slug}>
                     <Link
                       href={`/exchanges/${slug}`}
                       className="text-sm text-muted-foreground hover:text-foreground transition-colors capitalize"
                     >
-                      {slug.replace(/-/g, " ").replace("2c", "2C")}
+                      {slug === "gate-io" ? "Gate.io" : slug.replace(/-/g, " ").replace("2c", "2C")}
                     </Link>
                   </li>
                 )
@@ -81,12 +81,24 @@ export function Footer() {
           </div>
         </div>
 
+        {/* More Tools */}
+        <div className="mt-8 pt-8 border-t border-border">
+          <h4 className="text-sm font-semibold text-foreground mb-3">More Tools</h4>
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <a href="https://github.com/avinoamMO/tokenscout" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">TokenScout</a>
+            <a href="https://github.com/avinoamMO/compliancekit" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">ComplianceKit</a>
+            <a href="https://github.com/avinoamMO/reposcout" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">RepoScout</a>
+            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">All Projects &rarr;</a>
+          </div>
+        </div>
+
         <div className="mt-8 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} CryptoROI. Not financial advice.
           </p>
           <p className="text-xs text-muted-foreground">
-            Affiliate links may earn commissions. This does not affect our rankings.
+            Built by{" "}
+            <a href="#" className="text-foreground hover:underline">Avinoam Oltchik</a>
           </p>
         </div>
       </div>

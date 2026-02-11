@@ -1,7 +1,7 @@
 import { exchanges, getExchangeBySlug, getExchangeById } from "@/data/exchanges";
 
 describe("Exchange Data", () => {
-  it("has 7 exchanges", () => { expect(exchanges).toHaveLength(7); });
+  it("has 10 exchanges", () => { expect(exchanges).toHaveLength(10); });
 
   it("each has required fields", () => {
     exchanges.forEach(e => {
