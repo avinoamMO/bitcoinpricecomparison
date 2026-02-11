@@ -1,9 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AdScript } from "@/components/ads";
 import { Analytics } from "@/components/Analytics";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { faqItems } from "@/data/faq";
 
 const siteName = "CryptoROI";
@@ -13,8 +15,18 @@ const defaultTitle =
 const defaultDescription =
   "Compare real-time prices, fees, and net ROI for Bitcoin, Ethereum, and Dogecoin across 100+ cryptocurrency exchanges. Find the cheapest way to buy crypto.";
 
+export const viewport: Viewport = {
+  themeColor: "#F7931A",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: siteName,
+    statusBarStyle: "black-translucent",
+  },
   title: {
     default: defaultTitle,
     template: `%s | ${siteName}`,
@@ -122,13 +134,21 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-black focus:rounded"
+        >
+          Skip to main content
+        </a>
         <Analytics />
         <AdScript />
         <Header />
-        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <main id="main-content" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           {children}
         </main>
         <Footer />
+        <ServiceWorkerRegistration />
+        <OfflineIndicator />
       </body>
     </html>
   );
