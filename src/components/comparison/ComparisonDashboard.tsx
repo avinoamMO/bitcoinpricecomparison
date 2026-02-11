@@ -27,6 +27,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { AdBanner } from "@/components/ads";
+import { trackAssetSwitch, trackFilterChange } from "@/lib/analytics";
 
 const CS: Record<string, string> = {
   USD: "$",
@@ -66,6 +67,42 @@ export function ComparisonDashboard() {
   const [currencyPairFilter, setCurrencyPairFilter] = useState<CurrencyPairFilter>("all");
   const [platformTypeFilter, setPlatformTypeFilter] = useState<PlatformTypeFilter>("all");
   const [depositMethodFilter, setDepositMethodFilter] = useState<DepositMethodFilter>("all");
+
+  // Analytics-tracked state setters
+  const handleAssetChange = useCallback((a: CryptoAsset) => {
+    setAsset(a);
+    trackAssetSwitch(a);
+  }, []);
+
+  const handleCurrencyChange = useCallback((c: Currency) => {
+    setCurrency(c);
+    trackFilterChange("currency", c);
+  }, []);
+
+  const handleDepositMethodChange = useCallback((m: DepositMethod) => {
+    setDepositMethod(m);
+    trackFilterChange("deposit_method", m);
+  }, []);
+
+  const handleRegionChange = useCallback((r: ExchangeRegion | "All") => {
+    setSelectedRegion(r);
+    trackFilterChange("region", r);
+  }, []);
+
+  const handleCexDexChange = useCallback((f: CexDexFilter) => {
+    setCexDexFilter(f);
+    trackFilterChange("cex_dex", f);
+  }, []);
+
+  const handlePlatformTypeChange = useCallback((f: PlatformTypeFilter) => {
+    setPlatformTypeFilter(f);
+    trackFilterChange("platform_type", f);
+  }, []);
+
+  const handleDepositMethodFilterChange = useCallback((f: DepositMethodFilter) => {
+    setDepositMethodFilter(f);
+    trackFilterChange("deposit_method_filter", f);
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (amount <= 0) return;
@@ -343,10 +380,10 @@ export function ComparisonDashboard() {
             currency={currency}
             depositMethod={depositMethod}
             asset={asset}
-            onAssetChange={setAsset}
+            onAssetChange={handleAssetChange}
             onAmountChange={setAmount}
-            onCurrencyChange={setCurrency}
-            onDepositMethodChange={setDepositMethod}
+            onCurrencyChange={handleCurrencyChange}
+            onDepositMethodChange={handleDepositMethodChange}
           />
         </div>
       </div>
@@ -459,15 +496,15 @@ export function ComparisonDashboard() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             selectedRegion={selectedRegion}
-            onRegionChange={setSelectedRegion}
+            onRegionChange={handleRegionChange}
             cexDexFilter={cexDexFilter}
-            onCexDexFilterChange={setCexDexFilter}
+            onCexDexFilterChange={handleCexDexChange}
             currencyPairFilter={currencyPairFilter}
             onCurrencyPairFilterChange={setCurrencyPairFilter}
             platformTypeFilter={platformTypeFilter}
-            onPlatformTypeFilterChange={setPlatformTypeFilter}
+            onPlatformTypeFilterChange={handlePlatformTypeChange}
             depositMethodFilter={depositMethodFilter}
-            onDepositMethodFilterChange={setDepositMethodFilter}
+            onDepositMethodFilterChange={handleDepositMethodFilterChange}
             selectedCountry={selectedCountry}
             onCountryChange={setSelectedCountry}
             availableCountries={availableCountries}

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { articles, getArticleBySlug } from "@/data/articles";
 import Link from "next/link";
@@ -9,6 +10,35 @@ interface Props {
 
 export function generateStaticParams() {
   return articles.map((article) => ({ slug: article.slug }));
+}
+
+export function generateMetadata({ params }: Props): Metadata {
+  const article = getArticleBySlug(params.slug);
+  if (!article) return {};
+
+  const title = article.title;
+  const description = article.description;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `https://cryptoroi.com/learn/${article.slug}`,
+    },
+    openGraph: {
+      title: `${title} | CryptoROI`,
+      description,
+      url: `https://cryptoroi.com/learn/${article.slug}`,
+      type: "article",
+      publishedTime: article.publishedAt,
+      modifiedTime: article.updatedAt,
+    },
+    twitter: {
+      card: "summary",
+      title: `${title} | CryptoROI`,
+      description,
+    },
+  };
 }
 
 export default function ArticlePage({ params }: Props) {

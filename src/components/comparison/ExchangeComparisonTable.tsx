@@ -2,6 +2,7 @@
 
 import { ExchangeData, ASSET_CONFIG } from "@/types";
 import { ExternalLink, Star, Wifi, WifiOff, AlertTriangle, TrendingDown } from "lucide-react";
+import { trackExchangeClick } from "@/lib/analytics";
 
 interface ExchangeComparisonTableProps {
   exchanges: ExchangeData[];
@@ -293,6 +294,7 @@ export function ExchangeComparisonTable({
                       href={linkUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => trackExchangeClick(ex.name, ex.id, !!ex.featured)}
                       className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                         ex.featured
                           ? "bg-gold text-black hover:bg-gold-light"

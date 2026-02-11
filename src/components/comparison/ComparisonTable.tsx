@@ -5,6 +5,7 @@ import { Trophy, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { getExchangeById } from "@/data/exchanges";
+import { trackExchangeClick } from "@/lib/analytics";
 const CS: Record<string, string> = { USD: "$", EUR: "\u20AC", ILS: "\u20AA", GBP: "\u00A3" };
 interface Props { results: ComparisonResult[]; currency: string; amount: number; isLoading: boolean; }
 function Skel() { return (<div className="space-y-3">{[1,2,3,4,5].map(i=><div key={i} className="rounded-xl border border-border bg-card p-5 animate-pulse"><div className="flex items-center gap-4"><div className="w-8 h-8 rounded-full bg-muted"/><div className="flex-1"><div className="h-4 w-32 bg-muted rounded"/></div><div className="h-9 w-24 bg-muted rounded-lg"/></div></div>)}</div>); }
@@ -36,11 +37,11 @@ export function ComparisonTable({ results, currency, isLoading }: Props) {
               </div>
               <div className="sm:hidden text-right"><p className={`text-sm font-bold ${r.isBestDeal?"text-success":"text-foreground"}`}>{s}{r.totalCostDollar.toFixed(2)}</p><p className="text-[10px] text-muted-foreground">total fees</p></div>
               <div className="flex items-center gap-2">
-                <a href={r.affiliateUrl} target="_blank" rel="noopener noreferrer" className={`hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${r.isBestDeal?"bg-gold text-black hover:bg-gold-light":"bg-muted text-foreground border border-border"}`} onClick={e=>e.stopPropagation()}>Buy Here <ExternalLink className="h-3.5 w-3.5"/></a>
+                <a href={r.affiliateUrl} target="_blank" rel="noopener noreferrer" className={`hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${r.isBestDeal?"bg-gold text-black hover:bg-gold-light":"bg-muted text-foreground border border-border"}`} onClick={e=>{e.stopPropagation();trackExchangeClick(r.exchangeName,r.exchangeId,!!r.isBestDeal);}}>Buy Here <ExternalLink className="h-3.5 w-3.5"/></a>
                 <button className="p-1 text-muted-foreground" aria-label="Toggle details">{exp===r.exchangeId?<ChevronUp className="h-4 w-4"/>:<ChevronDown className="h-4 w-4"/>}</button>
               </div>
             </div>
-            <div className="sm:hidden mt-3"><a href={r.affiliateUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium ${r.isBestDeal?"bg-gold text-black":"bg-muted text-foreground border border-border"}`} onClick={e=>e.stopPropagation()}>Buy Here <ExternalLink className="h-3.5 w-3.5"/></a></div>
+            <div className="sm:hidden mt-3"><a href={r.affiliateUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium ${r.isBestDeal?"bg-gold text-black":"bg-muted text-foreground border border-border"}`} onClick={e=>{e.stopPropagation();trackExchangeClick(r.exchangeName,r.exchangeId,!!r.isBestDeal);}}>Buy Here <ExternalLink className="h-3.5 w-3.5"/></a></div>
           </div>
           {exp===r.exchangeId && (
             <div className="px-4 sm:px-5 pb-4 sm:pb-5 border-t border-border/50 pt-4 animate-fade-in">

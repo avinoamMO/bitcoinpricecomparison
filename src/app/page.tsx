@@ -1,5 +1,6 @@
 import { ComparisonDashboard } from "@/components/comparison/ComparisonDashboard";
 import { AdBanner } from "@/components/ads";
+import { FAQ } from "@/components/comparison/FAQ";
 
 export default function HomePage() {
   return (
@@ -47,6 +48,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <FAQ />
     </>
   );
 }

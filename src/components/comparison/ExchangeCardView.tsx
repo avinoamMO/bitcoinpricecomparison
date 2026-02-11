@@ -10,6 +10,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { AdInFeed } from "@/components/ads";
+import { trackExchangeClick } from "@/lib/analytics";
 
 function formatPrice(price: number | null, pair: string): string {
   if (price == null) return "N/A";
@@ -382,6 +383,7 @@ function ExchangeCard({
           href={linkUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => trackExchangeClick(exchange.name, exchange.id, !!exchange.featured)}
           className={`mt-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
             exchange.featured
               ? "bg-gold text-black hover:bg-gold-light"
