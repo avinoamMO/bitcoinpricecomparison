@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Trophy, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import { getExchangeById } from "@/data/exchanges";
 const CS: Record<string, string> = { USD: "$", EUR: "\u20AC", ILS: "\u20AA", GBP: "\u00A3" };
 interface Props { results: ComparisonResult[]; currency: string; amount: number; isLoading: boolean; }
 function Skel() { return (<div className="space-y-3">{[1,2,3,4,5].map(i=><div key={i} className="rounded-xl border border-border bg-card p-5 animate-pulse"><div className="flex items-center gap-4"><div className="w-8 h-8 rounded-full bg-muted"/><div className="flex-1"><div className="h-4 w-32 bg-muted rounded"/></div><div className="h-9 w-24 bg-muted rounded-lg"/></div></div>)}</div>); }
@@ -49,7 +50,7 @@ export function ComparisonTable({ results, currency, isLoading }: Props) {
                 <div><p className="text-xs text-muted-foreground">Spread</p><p className="text-sm font-semibold">{s}{r.spreadDollar.toFixed(2)}</p><p className="text-[10px] text-muted-foreground">{r.spreadPercent.toFixed(2)}%</p></div>
                 <div><p className="text-xs text-muted-foreground">Withdrawal</p><p className="text-sm font-semibold">{s}{r.withdrawalFeeDollar.toFixed(2)}</p><p className="text-[10px] text-muted-foreground font-mono">{r.withdrawalFeeBtc.toFixed(8)} BTC</p></div>
               </div>
-              <div className="mt-4"><Link href={`/exchanges/${r.exchangeId}`} className="text-sm text-gold hover:text-gold-light flex items-center gap-1">Full review <ExternalLink className="h-3 w-3"/></Link></div>
+              <div className="mt-4"><Link href={`/exchanges/${getExchangeById(r.exchangeId)?.slug ?? r.exchangeId}`} className="text-sm text-gold hover:text-gold-light flex items-center gap-1">Full review <ExternalLink className="h-3 w-3"/></Link></div>
             </div>
           )}
         </div>

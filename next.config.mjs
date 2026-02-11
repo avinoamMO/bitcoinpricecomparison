@@ -1,9 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // ccxt is a large package with native Node.js dependencies.
-  // serverExternalPackages prevents it from being bundled into serverless functions,
-  // letting Vercel resolve it at runtime instead (avoids 50MB+ function size).
-  serverExternalPackages: ["ccxt"],
+  experimental: {
+    // ccxt is a large package with native Node.js dependencies.
+    // serverComponentsExternalPackages prevents it from being bundled into serverless functions,
+    // letting Vercel resolve it at runtime instead (avoids 50MB+ function size).
+    // Note: In Next.js 15+ this moves to top-level serverExternalPackages.
+    serverComponentsExternalPackages: ["ccxt"],
+  },
   // ccxt uses Node.js modules that shouldn't be bundled client-side
   webpack: (config, { isServer }) => {
     if (!isServer) {
