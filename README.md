@@ -8,7 +8,7 @@
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
-![Tests](https://img.shields.io/badge/tests-28%20passing-green)
+![Tests](https://img.shields.io/badge/tests-275%20passing-green)
 ![License](https://img.shields.io/badge/license-MIT-gray)
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel-black?logo=vercel)](https://bitcoinpricecomparison.vercel.app)
 
@@ -153,14 +153,20 @@ npm run test:watch
 npm run test:coverage
 ```
 
-28 tests across 3 test suites covering:
-- Comparison engine logic (17 tests)
-- Exchange data integrity (7 tests)
-- Article data integrity (4 tests)
+275 tests across 7 test suites covering:
+- Comparison engine logic
+- Exchange data integrity
+- Article data integrity
+- Component rendering
+- API route validation
+- Price service logic
+- Formatting utilities
 
 ## Deployment
 
 ### Vercel (Recommended)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/avinoamMO/bitcoinpricecomparison)
 
 1. Push to GitHub
 2. Import in [Vercel](https://vercel.com)
