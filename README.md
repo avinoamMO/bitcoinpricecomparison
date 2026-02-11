@@ -1,6 +1,8 @@
 # CryptoROI - Bitcoin Exchange Comparison Tool
 
-**Find the cheapest way to buy Bitcoin.** CryptoROI compares real-time prices and total costs across 7 major exchanges, so you keep more BTC in your wallet.
+**Find the cheapest way to buy Bitcoin.** CryptoROI compares real-time prices and total costs across 100+ exchanges via CCXT, so you keep more BTC in your wallet.
+
+**[Live Demo](https://bitcoinpricecomparison.vercel.app)**
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
@@ -21,7 +23,7 @@ CryptoROI calculates the **total cost** and shows you exactly how much BTC you r
 
 ## Features
 
-- **Real-time comparison** across 7 exchanges (Binance, Coinbase, Kraken, Bybit, OKX, Bit2C, Bits of Gold)
+- **Real-time comparison** across 100+ exchanges via CCXT (Binance, Coinbase, Kraken, Bybit, OKX, Bit2C, Bits of Gold, and many more)
 - **Total cost breakdown** showing trading fees, deposit fees, spread, and withdrawal costs
 - **Net BTC received** calculator -- see exactly what lands in your wallet
 - **ROI vs Best Deal** -- know how much you lose by picking the wrong exchange
