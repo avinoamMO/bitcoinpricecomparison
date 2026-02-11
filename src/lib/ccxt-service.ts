@@ -17,6 +17,7 @@ import {
   CcxtExchangeData,
   CcxtFeeData,
   OrderBookData,
+  CryptoAsset,
 } from "@/types";
 import {
   exchangeCache,
@@ -31,6 +32,8 @@ import {
   EXCHANGE_BLOCKLIST,
   detectRegion,
   formatCountry,
+  isDex as isDexExchange,
+  getAssetPairs,
   type FeaturedExchangeConfig,
 } from "./exchange-registry";
 import { exchangeHealth } from "./exchange-health";
@@ -41,7 +44,6 @@ const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 200; // ms between batches
 const EXCHANGE_TIMEOUT_MS = 10000;
 const DISCOVERY_TTL_MS = 60 * 60 * 1000; // 1 hour
-const BTC_PAIRS = ["BTC/USDT", "BTC/USD", "BTC/USDC", "BTC/EUR", "BTC/BUSD", "BTC/NIS", "BTC/ILS"];
 
 // ─── Dynamic Exchange Discovery ─────────────────────────────────────
 
@@ -129,19 +131,20 @@ function getExchangeInstance(id: string): Exchange | null {
 async function fetchTickerPrice(
   exchange: Exchange,
   exchangeId: string,
+  asset: CryptoAsset = "BTC",
   preferredPair?: string,
   fallbackPairs?: string[]
 ): Promise<{ price: number; pair: string } | null> {
-  const cacheKey = `ccxt:price:${exchangeId}`;
+  const cacheKey = `ccxt:price:${asset}:${exchangeId}`;
   const cached = exchangeCache.get<{ price: number; pair: string }>(cacheKey, PRICE_TTL_MS);
   if (cached) return cached;
 
-  // Build pairs list: preferred first, then fallbacks, then defaults
+  // Build pairs list: preferred first, then fallbacks, then asset defaults
   const pairs: string[] = [];
   if (preferredPair) pairs.push(preferredPair);
   if (fallbackPairs) pairs.push(...fallbackPairs);
-  // Add common BTC pairs as last resort for dynamically discovered exchanges
-  for (const p of BTC_PAIRS) {
+  // Add common pairs for the asset as last resort for dynamically discovered exchanges
+  for (const p of getAssetPairs(asset)) {
     if (!pairs.includes(p)) pairs.push(p);
   }
 
@@ -165,9 +168,10 @@ async function fetchTickerPrice(
 async function fetchOrderBookData(
   exchange: Exchange,
   exchangeId: string,
-  activePair: string
+  activePair: string,
+  asset: CryptoAsset = "BTC"
 ): Promise<OrderBookData | null> {
-  const cacheKey = `ccxt:orderbook:${exchangeId}`;
+  const cacheKey = `ccxt:orderbook:${asset}:${exchangeId}`;
   const cached = exchangeCache.get<OrderBookData>(cacheKey, ORDERBOOK_TTL_MS);
   if (cached) return cached;
 
@@ -222,18 +226,19 @@ async function fetchOrderBookData(
 
 function extractFees(
   exchange: Exchange | null,
+  asset: CryptoAsset = "BTC",
   featuredConfig?: FeaturedExchangeConfig
 ): CcxtFeeData {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const exchangeId = featuredConfig?.id || (exchange as any)?.id as string || "unknown";
-  const cacheKey = `ccxt:fees:${exchangeId}`;
+  const cacheKey = `ccxt:fees:${asset}:${exchangeId}`;
   const cached = exchangeCache.get<CcxtFeeData>(cacheKey, FEE_TTL_MS);
   if (cached) return cached;
 
   // Start with defaults
   let takerFee = featuredConfig?.manualFees?.takerFee ?? 0.1;
   let makerFee = featuredConfig?.manualFees?.makerFee ?? 0.1;
-  let withdrawalFeeBTC = featuredConfig?.manualFees?.withdrawalFeeBTC ?? null;
+  let withdrawalFee = featuredConfig?.manualFees?.withdrawalFee ?? null;
 
   // Try to get fees from CCXT exchange.fees object
   if (exchange) {
@@ -250,25 +255,26 @@ function extractFees(
           }
         }
       }
-      if (exchange.currencies?.["BTC"]?.fee != null) {
-        withdrawalFeeBTC = exchange.currencies["BTC"].fee as number;
+      // Use the selected asset for withdrawal fee extraction
+      if (exchange.currencies?.[asset]?.fee != null) {
+        withdrawalFee = exchange.currencies[asset].fee as number;
       }
     } catch {
       // Fall through to defaults
     }
   }
 
-  // Manual overrides take precedence for featured exchanges
+  // Manual overrides take precedence for featured exchanges (only for BTC)
   if (featuredConfig?.manualFees?.takerFee != null) takerFee = featuredConfig.manualFees.takerFee;
   if (featuredConfig?.manualFees?.makerFee != null) makerFee = featuredConfig.manualFees.makerFee;
-  if (featuredConfig?.manualFees?.withdrawalFeeBTC != null) {
-    withdrawalFeeBTC = featuredConfig.manualFees.withdrawalFeeBTC;
+  if (asset === "BTC" && featuredConfig?.manualFees?.withdrawalFee != null) {
+    withdrawalFee = featuredConfig.manualFees.withdrawalFee;
   }
 
   const fees: CcxtFeeData = {
     takerFee,
     makerFee,
-    withdrawalFeeBTC,
+    withdrawalFee,
     fiatDepositFee: featuredConfig?.manualFees?.fiatDepositFee ?? "Varies",
     fiatWithdrawalFee: featuredConfig?.manualFees?.fiatWithdrawalFee ?? "Varies",
     feeTiers: featuredConfig?.manualFeeTiers ?? [],
@@ -281,20 +287,29 @@ function extractFees(
 // ─── Single Exchange Fetch ──────────────────────────────────────────
 
 async function fetchExchangeData(
-  discovered: DiscoveredExchange
+  discovered: DiscoveredExchange,
+  asset: CryptoAsset = "BTC"
 ): Promise<CcxtExchangeData> {
   const featuredConfig = getFeaturedConfig(discovered.id);
   const isFeatured = !!featuredConfig;
 
-  // Manual-only exchanges (e.g., Bits of Gold)
+  // Skip featured exchanges that don't support this asset
+  if (featuredConfig && !featuredConfig.supportedAssets.includes(asset)) {
+    return buildErrorResult(discovered, featuredConfig, `${asset} not supported`, asset);
+  }
+
+  // Manual-only exchanges (e.g., Bits of Gold) — only for BTC
   if (featuredConfig?.manualOnly) {
+    if (asset !== "BTC") {
+      return buildErrorResult(discovered, featuredConfig, `${asset} not supported`, asset);
+    }
     return getBitsOfGoldData();
   }
 
   const exchange = getExchangeInstance(discovered.id);
   if (!exchange) {
     exchangeHealth.recordFailure(discovered.id, "Could not create CCXT instance");
-    return buildErrorResult(discovered, featuredConfig, "Exchange not available in CCXT");
+    return buildErrorResult(discovered, featuredConfig, "Exchange not available in CCXT", asset);
   }
 
   try {
@@ -305,26 +320,39 @@ async function fetchExchangeData(
       exchangeCache.set(marketsKey, true);
     }
 
+    // For featured exchanges with non-BTC asset, derive the pair from the asset
+    let preferredPair = featuredConfig?.tradingPair;
+    let fallbackPairs = featuredConfig?.fallbackPairs;
+    if (asset !== "BTC" && featuredConfig) {
+      // Replace BTC with the selected asset in the configured pairs
+      const baseCurrency = featuredConfig.tradingPair.split("/")[1];
+      preferredPair = `${asset}/${baseCurrency}`;
+      fallbackPairs = featuredConfig.fallbackPairs.map(
+        (p) => `${asset}/${p.split("/")[1]}`
+      );
+    }
+
     // Fetch ticker price
     const tickerResult = await fetchTickerPrice(
       exchange,
       discovered.id,
-      featuredConfig?.tradingPair,
-      featuredConfig?.fallbackPairs
+      asset,
+      preferredPair,
+      fallbackPairs
     );
 
     if (!tickerResult) {
-      exchangeHealth.recordFailure(discovered.id, "No BTC pair found or price unavailable");
-      return buildErrorResult(discovered, featuredConfig, "No BTC trading pair found");
+      exchangeHealth.recordFailure(discovered.id, `No ${asset} pair found or price unavailable`);
+      return buildErrorResult(discovered, featuredConfig, `No ${asset} trading pair found`, asset);
     }
 
     const activePair = tickerResult.pair;
 
     // Fetch order book (best effort, don't fail if unavailable)
-    const orderBookResult = await fetchOrderBookData(exchange, discovered.id, activePair);
+    const orderBookResult = await fetchOrderBookData(exchange, discovered.id, activePair, asset);
 
     // Extract fees
-    const fees = extractFees(exchange, featuredConfig);
+    const fees = extractFees(exchange, asset, featuredConfig);
 
     exchangeHealth.recordSuccess(discovered.id);
 
@@ -338,6 +366,8 @@ async function fetchExchangeData(
       featured: isFeatured,
       price: tickerResult.price,
       tradingPair: activePair,
+      assetSymbol: asset,
+      isDex: isDexExchange(discovered.id),
       fees,
       orderBook: orderBookResult,
       simulation: null,
@@ -353,14 +383,15 @@ async function fetchExchangeData(
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
     exchangeHealth.recordFailure(discovered.id, errorMsg);
-    return buildErrorResult(discovered, featuredConfig, errorMsg);
+    return buildErrorResult(discovered, featuredConfig, errorMsg, asset);
   }
 }
 
 function buildErrorResult(
   discovered: DiscoveredExchange,
   featuredConfig: FeaturedExchangeConfig | undefined,
-  error: string
+  error: string,
+  asset: CryptoAsset = "BTC"
 ): CcxtExchangeData {
   return {
     id: discovered.id,
@@ -371,8 +402,10 @@ function buildErrorResult(
     israeliExchange: featuredConfig?.israeliExchange ?? false,
     featured: !!featuredConfig,
     price: null,
-    tradingPair: featuredConfig?.tradingPair ?? "BTC/USDT",
-    fees: extractFees(null, featuredConfig),
+    tradingPair: featuredConfig?.tradingPair ?? `${asset}/USDT`,
+    assetSymbol: asset,
+    isDex: isDexExchange(discovered.id),
+    fees: extractFees(null, asset, featuredConfig),
     orderBook: null,
     simulation: null,
     feePageUrl: featuredConfig?.feePageUrl ?? "",
@@ -401,10 +434,12 @@ function getBitsOfGoldData(): CcxtExchangeData {
     featured: true,
     price: null,
     tradingPair: "BTC/ILS",
+    assetSymbol: "BTC",
+    isDex: false,
     fees: {
       takerFee: 0.5,
       makerFee: 0.5,
-      withdrawalFeeBTC: 0.0005,
+      withdrawalFee: 0.0005,
       fiatDepositFee: "Bank transfer: free; Credit card: 2.5%",
       fiatWithdrawalFee: "Bank transfer: free",
       feeTiers: [
@@ -435,7 +470,8 @@ async function sleep(ms: number): Promise<void> {
  * Featured exchanges are always fetched first.
  */
 async function fetchBatched(
-  exchanges: DiscoveredExchange[]
+  exchanges: DiscoveredExchange[],
+  asset: CryptoAsset = "BTC"
 ): Promise<CcxtExchangeData[]> {
   const results: CcxtExchangeData[] = [];
 
@@ -453,7 +489,7 @@ async function fetchBatched(
     const batch = sorted.slice(i, i + BATCH_SIZE);
 
     const batchResults = await Promise.allSettled(
-      batch.map((ex) => fetchExchangeData(ex))
+      batch.map((ex) => fetchExchangeData(ex, asset))
     );
 
     for (const result of batchResults) {
@@ -480,12 +516,12 @@ async function fetchBatched(
  *
  * Results are a mix of cached and fresh data depending on TTLs.
  */
-export async function fetchAllCcxtData(): Promise<{
+export async function fetchAllCcxtData(asset: CryptoAsset = "BTC"): Promise<{
   exchanges: CcxtExchangeData[];
   totalDiscovered: number;
 }> {
-  // Check for a full cached result first
-  const fullCacheKey = "ccxt:allData";
+  // Check for a full cached result first (per asset)
+  const fullCacheKey = `ccxt:allData:${asset}`;
   const fullCached = exchangeCache.get<{
     exchanges: CcxtExchangeData[];
     totalDiscovered: number;
@@ -502,10 +538,15 @@ export async function fetchAllCcxtData(): Promise<{
   );
 
   // Fetch all exchange data in batches
-  const results = await fetchBatched(toFetch);
+  const results = await fetchBatched(toFetch, asset);
+
+  // Filter out exchanges that returned "not supported" errors for this asset
+  const validResults = results.filter(
+    (r) => !(r.status === "error" && r.error?.includes("not supported"))
+  );
 
   // Sort: featured first, then by status (ok first), then alphabetically
-  results.sort((a, b) => {
+  validResults.sort((a, b) => {
     if (a.featured && !b.featured) return -1;
     if (!a.featured && b.featured) return 1;
     if (a.status === "ok" && b.status !== "ok") return -1;
@@ -513,7 +554,7 @@ export async function fetchAllCcxtData(): Promise<{
     return a.name.localeCompare(b.name);
   });
 
-  const output = { exchanges: results, totalDiscovered: discovered.length };
+  const output = { exchanges: validResults, totalDiscovered: discovered.length };
   exchangeCache.set(fullCacheKey, output);
   return output;
 }
@@ -540,6 +581,7 @@ export async function fetchCcxtPrice(
     return await fetchTickerPrice(
       exchange,
       exchangeId,
+      "BTC",
       featuredConfig?.tradingPair,
       featuredConfig?.fallbackPairs
     );

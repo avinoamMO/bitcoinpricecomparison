@@ -23,7 +23,9 @@ import {
   FeeTier,
   CcxtApiResponse,
   ExchangeRegion,
+  ASSET_CONFIG,
 } from "@/types";
+import { getAssetPairs, isDex, DEX_EXCHANGE_IDS } from "@/lib/exchange-registry";
 
 describe("Featured Exchange Configs", () => {
   it("has 7 featured exchange configurations", () => {
@@ -83,7 +85,7 @@ describe("Featured Exchange Configs", () => {
 
   it("assigns regions to all featured exchanges", () => {
     FEATURED_EXCHANGES.forEach((config) => {
-      expect(["Global", "Americas", "Europe", "Asia", "Israel", "Other"]).toContain(config.region);
+      expect(["Global", "Americas", "Europe", "APAC", "MENA", "Africa", "Israel", "Other"]).toContain(config.region);
     });
   });
 
@@ -167,10 +169,16 @@ describe("Region Detection", () => {
     expect(detectRegion(["MT"])).toBe("Europe");
   });
 
-  it("detects Asia region", () => {
-    expect(detectRegion(["JP"])).toBe("Asia");
-    expect(detectRegion(["SG"])).toBe("Asia");
-    expect(detectRegion(["AE"])).toBe("Asia");
+  it("detects APAC region", () => {
+    expect(detectRegion(["JP"])).toBe("APAC");
+    expect(detectRegion(["SG"])).toBe("APAC");
+    expect(detectRegion(["AU"])).toBe("APAC");
+  });
+
+  it("detects MENA region", () => {
+    expect(detectRegion(["AE"])).toBe("MENA");
+    expect(detectRegion(["SA"])).toBe("MENA");
+    expect(detectRegion(["TR"])).toBe("MENA");
   });
 
   it("detects Israel region", () => {
@@ -180,6 +188,7 @@ describe("Region Detection", () => {
   it("detects Global for multi-region exchanges", () => {
     expect(detectRegion(["US", "JP"])).toBe("Global");
     expect(detectRegion(["GB", "SG"])).toBe("Global");
+    expect(detectRegion(["AE", "JP"])).toBe("Global");
   });
 
   it("returns Other for unknown countries", () => {
@@ -313,13 +322,13 @@ describe("CCXT Type Structures", () => {
     const fee: CcxtFeeData = {
       takerFee: 0.1,
       makerFee: 0.1,
-      withdrawalFeeBTC: 0.0001,
+      withdrawalFee: 0.0001,
       fiatDepositFee: "Free",
       fiatWithdrawalFee: "Free",
       feeTiers: [],
     };
     expect(fee.takerFee).toBe(0.1);
-    expect(fee.withdrawalFeeBTC).toBe(0.0001);
+    expect(fee.withdrawalFee).toBe(0.0001);
   });
 
   it("OrderBookData has correct shape", () => {
@@ -350,10 +359,12 @@ describe("CCXT Type Structures", () => {
       featured: false,
       price: null,
       tradingPair: "BTC/USDT",
+      assetSymbol: "BTC",
+      isDex: false,
       fees: {
         takerFee: 0.1,
         makerFee: 0.1,
-        withdrawalFeeBTC: null,
+        withdrawalFee: null,
         fiatDepositFee: "Varies",
         fiatWithdrawalFee: "Varies",
         feeTiers: [],
@@ -376,6 +387,8 @@ describe("CCXT Type Structures", () => {
     expect(exchange.featured).toBe(false);
     expect(exchange.healthStatus).toBe("unknown");
     expect(exchange.countries).toEqual(["US"]);
+    expect(exchange.assetSymbol).toBe("BTC");
+    expect(exchange.isDex).toBe(false);
   });
 
   it("CcxtExchangeData supports featured exchange fields", () => {
@@ -389,10 +402,12 @@ describe("CCXT Type Structures", () => {
       featured: true,
       price: 97000,
       tradingPair: "BTC/USDT",
+      assetSymbol: "BTC",
+      isDex: false,
       fees: {
         takerFee: 0.1,
         makerFee: 0.1,
-        withdrawalFeeBTC: 0.0000025,
+        withdrawalFee: 0.0000025,
         fiatDepositFee: "Free (bank transfer)",
         fiatWithdrawalFee: "Free (bank transfer)",
         feeTiers: [],
@@ -445,8 +460,87 @@ describe("CCXT Type Structures", () => {
   });
 
   it("ExchangeRegion type covers all expected values", () => {
-    const regions: ExchangeRegion[] = ["Global", "Americas", "Europe", "Asia", "Israel", "Other"];
-    expect(regions).toHaveLength(6);
+    const regions: ExchangeRegion[] = ["Global", "Americas", "Europe", "APAC", "MENA", "Africa", "Israel", "Other"];
+    expect(regions).toHaveLength(8);
+  });
+});
+
+describe("Multi-Asset Support", () => {
+  it("getAssetPairs returns correct pairs for BTC", () => {
+    const pairs = getAssetPairs("BTC");
+    expect(pairs).toContain("BTC/USDT");
+    expect(pairs).toContain("BTC/USD");
+    expect(pairs).toContain("BTC/NIS");
+    expect(pairs.every((p) => p.startsWith("BTC/"))).toBe(true);
+  });
+
+  it("getAssetPairs returns correct pairs for ETH", () => {
+    const pairs = getAssetPairs("ETH");
+    expect(pairs).toContain("ETH/USDT");
+    expect(pairs).toContain("ETH/USD");
+    expect(pairs.every((p) => p.startsWith("ETH/"))).toBe(true);
+  });
+
+  it("getAssetPairs returns correct pairs for DOGE", () => {
+    const pairs = getAssetPairs("DOGE");
+    expect(pairs).toContain("DOGE/USDT");
+    expect(pairs).toContain("DOGE/USD");
+    expect(pairs.every((p) => p.startsWith("DOGE/"))).toBe(true);
+  });
+
+  it("ASSET_CONFIG has all 3 assets configured", () => {
+    expect(ASSET_CONFIG.BTC).toBeDefined();
+    expect(ASSET_CONFIG.ETH).toBeDefined();
+    expect(ASSET_CONFIG.DOGE).toBeDefined();
+    expect(ASSET_CONFIG.BTC.name).toBe("Bitcoin");
+    expect(ASSET_CONFIG.ETH.name).toBe("Ethereum");
+    expect(ASSET_CONFIG.DOGE.name).toBe("Dogecoin");
+  });
+
+  it("ASSET_CONFIG decimals are correct", () => {
+    expect(ASSET_CONFIG.BTC.decimals).toBe(8);
+    expect(ASSET_CONFIG.ETH.decimals).toBe(6);
+    expect(ASSET_CONFIG.DOGE.decimals).toBe(2);
+  });
+
+  it("featured exchanges declare supportedAssets", () => {
+    FEATURED_EXCHANGES.forEach((config) => {
+      expect(config.supportedAssets).toBeDefined();
+      expect(config.supportedAssets.length).toBeGreaterThan(0);
+      expect(config.supportedAssets).toContain("BTC");
+    });
+  });
+
+  it("Bit2C supports BTC and ETH but not DOGE", () => {
+    const bit2c = FEATURED_EXCHANGES.find((c) => c.id === "bit2c");
+    expect(bit2c?.supportedAssets).toContain("BTC");
+    expect(bit2c?.supportedAssets).toContain("ETH");
+    expect(bit2c?.supportedAssets).not.toContain("DOGE");
+  });
+
+  it("Bits of Gold supports only BTC", () => {
+    const bog = FEATURED_EXCHANGES.find((c) => c.id === "bitsofgold");
+    expect(bog?.supportedAssets).toEqual(["BTC"]);
+  });
+});
+
+describe("DEX Detection", () => {
+  it("identifies known DEX exchanges", () => {
+    expect(isDex("uniswap")).toBe(true);
+    expect(isDex("sushiswap")).toBe(true);
+    expect(isDex("curve")).toBe(true);
+    expect(isDex("dydx")).toBe(true);
+  });
+
+  it("identifies CEX exchanges", () => {
+    expect(isDex("binance")).toBe(false);
+    expect(isDex("coinbase")).toBe(false);
+    expect(isDex("kraken")).toBe(false);
+  });
+
+  it("DEX_EXCHANGE_IDS is a Set", () => {
+    expect(DEX_EXCHANGE_IDS).toBeInstanceOf(Set);
+    expect(DEX_EXCHANGE_IDS.size).toBeGreaterThan(5);
   });
 });
 

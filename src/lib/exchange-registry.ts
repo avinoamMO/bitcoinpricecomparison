@@ -8,7 +8,7 @@
  * Dynamically discovered exchanges get region/country from CCXT metadata.
  */
 
-import { ExchangeRegion, FeeTier, CcxtFeeData } from "@/types";
+import { ExchangeRegion, FeeTier, CcxtFeeData, CryptoAsset, ASSET_CONFIG } from "@/types";
 
 // ─── Featured Exchange Config ───────────────────────────────────────
 
@@ -20,6 +20,7 @@ export interface FeaturedExchangeConfig {
   israeliExchange: boolean;
   tradingPair: string;
   fallbackPairs: string[];
+  supportedAssets: CryptoAsset[];
   feePageUrl: string;
   websiteUrl: string;
   affiliateUrl: string;
@@ -39,6 +40,7 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     israeliExchange: false,
     tradingPair: "BTC/USDT",
     fallbackPairs: ["BTC/USDC"],
+    supportedAssets: ["BTC", "ETH", "DOGE"],
     feePageUrl: "https://www.binance.com/en/fee/schedule",
     websiteUrl: "https://www.binance.com",
     affiliateUrl: "https://www.binance.com/en/register?ref=CRYPTOROI",
@@ -61,6 +63,7 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     israeliExchange: false,
     tradingPair: "BTC/USDT",
     fallbackPairs: ["BTC/USD", "BTC/USDC"],
+    supportedAssets: ["BTC", "ETH", "DOGE"],
     feePageUrl: "https://www.coinbase.com/advanced-fees",
     websiteUrl: "https://www.coinbase.com",
     affiliateUrl: "https://www.coinbase.com/join/CRYPTOROI",
@@ -83,6 +86,7 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     israeliExchange: false,
     tradingPair: "BTC/USDT",
     fallbackPairs: ["BTC/USD"],
+    supportedAssets: ["BTC", "ETH", "DOGE"],
     feePageUrl: "https://www.kraken.com/features/fee-schedule",
     websiteUrl: "https://www.kraken.com",
     affiliateUrl: "https://www.kraken.com/sign-up?ref=CRYPTOROI",
@@ -101,10 +105,11 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     id: "bybit",
     name: "Bybit",
     country: "Dubai (UAE)",
-    region: "Asia",
+    region: "MENA",
     israeliExchange: false,
     tradingPair: "BTC/USDT",
     fallbackPairs: ["BTC/USDC"],
+    supportedAssets: ["BTC", "ETH", "DOGE"],
     feePageUrl: "https://www.bybit.com/en/help-center/article/Fee-Structure",
     websiteUrl: "https://www.bybit.com",
     affiliateUrl: "https://www.bybit.com/register?affiliate_id=CRYPTOROI",
@@ -126,6 +131,7 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     israeliExchange: false,
     tradingPair: "BTC/USDT",
     fallbackPairs: ["BTC/USDC"],
+    supportedAssets: ["BTC", "ETH", "DOGE"],
     feePageUrl: "https://www.okx.com/fees",
     websiteUrl: "https://www.okx.com",
     affiliateUrl: "https://www.okx.com/join/CRYPTOROI",
@@ -147,6 +153,7 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     israeliExchange: true,
     tradingPair: "BTC/NIS",
     fallbackPairs: [],
+    supportedAssets: ["BTC", "ETH"],
     feePageUrl: "https://www.bit2c.co.il/home/Fees",
     websiteUrl: "https://www.bit2c.co.il",
     affiliateUrl: "https://www.bit2c.co.il/Register?ref=CRYPTOROI",
@@ -160,7 +167,7 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     manualFees: {
       fiatDepositFee: "Free (bank transfer)",
       fiatWithdrawalFee: "Free (bank transfer)",
-      withdrawalFeeBTC: 0.0001,
+      withdrawalFee: 0.0001,
     },
   },
   {
@@ -171,6 +178,7 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     israeliExchange: true,
     tradingPair: "BTC/ILS",
     fallbackPairs: [],
+    supportedAssets: ["BTC"],
     feePageUrl: "https://www.bitsofgold.co.il/fees",
     websiteUrl: "https://www.bitsofgold.co.il",
     affiliateUrl: "https://www.bitsofgold.co.il/?ref=CRYPTOROI",
@@ -182,7 +190,7 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
     manualFees: {
       takerFee: 0.5,
       makerFee: 0.5,
-      withdrawalFeeBTC: 0.0005,
+      withdrawalFee: 0.0005,
       fiatDepositFee: "Bank transfer: free; Credit card: 2.5%",
       fiatWithdrawalFee: "Bank transfer: free",
     },
@@ -208,11 +216,15 @@ const COUNTRY_TO_REGION: Record<string, ExchangeRegion> = {
   LT: "Europe", LV: "Europe", MT: "Europe", CY: "Europe", LU: "Europe",
   BE: "Europe", SI: "Europe", SK: "Europe", GR: "Europe", HU: "Europe",
   LI: "Europe", GI: "Europe", IM: "Europe", JE: "Europe", GG: "Europe",
-  // Asia
-  JP: "Asia", KR: "Asia", CN: "Asia", HK: "Asia", SG: "Asia",
-  TH: "Asia", VN: "Asia", ID: "Asia", MY: "Asia", PH: "Asia",
-  IN: "Asia", AE: "Asia", BH: "Asia", QA: "Asia", KW: "Asia",
-  SA: "Asia", TR: "Asia", TW: "Asia", AU: "Asia", NZ: "Asia",
+  // APAC (Asia-Pacific)
+  JP: "APAC", KR: "APAC", CN: "APAC", HK: "APAC", SG: "APAC",
+  TH: "APAC", VN: "APAC", ID: "APAC", MY: "APAC", PH: "APAC",
+  IN: "APAC", TW: "APAC", AU: "APAC", NZ: "APAC",
+  // MENA (Middle East & North Africa)
+  AE: "MENA", BH: "MENA", QA: "MENA", KW: "MENA", SA: "MENA", TR: "MENA",
+  EG: "MENA", JO: "MENA", LB: "MENA", OM: "MENA",
+  // Africa
+  NG: "Africa", ZA: "Africa", KE: "Africa", GH: "Africa",
   // Israel
   IL: "Israel",
   // Global / Other
@@ -305,6 +317,35 @@ export const EXCHANGE_BLOCKLIST: Set<string> = new Set([
   "tidex",
   "southxchange",
 ]);
+
+// ─── DEX Exchanges ──────────────────────────────────────────────────
+
+export const DEX_EXCHANGE_IDS: Set<string> = new Set([
+  "uniswap", "uniswapv2", "uniswapv3",
+  "pancakeswap", "pancakeswapv3",
+  "1inch",
+  "dydx",
+  "sushiswap", "sushiswapv3",
+  "curve",
+  "balancer",
+  "raydium",
+  "jupiter",
+]);
+
+export function isDex(exchangeId: string): boolean {
+  return DEX_EXCHANGE_IDS.has(exchangeId);
+}
+
+// ─── Asset Pair Helpers ─────────────────────────────────────────────
+
+/**
+ * Returns trading pairs for a given asset.
+ * For featured exchanges, uses configured pairs when asset matches.
+ * For dynamic discovery, generates standard pairs.
+ */
+export function getAssetPairs(asset: CryptoAsset): string[] {
+  return ASSET_CONFIG[asset].pairs;
+}
 
 // ─── Helper ─────────────────────────────────────────────────────────
 

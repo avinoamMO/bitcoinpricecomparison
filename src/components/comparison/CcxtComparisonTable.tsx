@@ -1,6 +1,6 @@
 "use client";
 
-import { CcxtExchangeData } from "@/types";
+import { CcxtExchangeData, ASSET_CONFIG } from "@/types";
 import { ExternalLink, Star, Wifi, WifiOff, AlertTriangle, TrendingDown } from "lucide-react";
 
 interface CcxtComparisonTableProps {
@@ -68,6 +68,11 @@ export function CcxtComparisonTable({
 
   const hasSimulation = exchangesWithSim.length > 0;
 
+  // Derive asset symbol from exchange data (all should be same asset in one fetch)
+  const assetSymbol = exchanges[0]?.assetSymbol || "BTC";
+  const assetConfig = ASSET_CONFIG[assetSymbol as keyof typeof ASSET_CONFIG] || ASSET_CONFIG.BTC;
+  const assetDecimals = assetConfig.decimals;
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm text-left border-collapse">
@@ -87,7 +92,7 @@ export function CcxtComparisonTable({
                   Slippage
                 </th>
                 <th className="py-3 px-3 text-right">
-                  BTC Received
+                  {assetSymbol} Received
                 </th>
               </>
             )}
@@ -244,7 +249,7 @@ export function CcxtComparisonTable({
                                 : "text-foreground"
                             }`}
                           >
-                            {sim.btcReceived.toFixed(8)} BTC
+                            {sim.btcReceived.toFixed(assetDecimals)} {assetSymbol}
                           </div>
                           {btcDiff != null && btcDiff > 0 && (
                             <div className="text-[10px] text-crypto-red">
@@ -307,7 +312,7 @@ export function CcxtComparisonTable({
         <div className="mt-3 px-3 py-2 rounded-lg bg-muted/50 border border-border/50">
           <p className="text-xs text-muted-foreground">
             <strong className="text-foreground">Market Order Simulation:</strong>{" "}
-            BTC Received is calculated by walking the real-time order book — simulating
+            {assetSymbol} Received is calculated by walking the real-time order book — simulating
             what happens if you place a ${investmentAmount.toLocaleString()} market buy
             right now. Includes slippage from consuming multiple price levels.
             {exchanges.some((e) => e.simulation && !e.simulation.fullyFilled) && (

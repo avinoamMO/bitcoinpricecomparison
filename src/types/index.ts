@@ -1,6 +1,38 @@
 export type Currency = "USD" | "EUR" | "ILS" | "GBP";
 export type DepositMethod = "bank_transfer" | "credit_card" | "crypto" | "wire";
 
+// ─── Multi-Asset Support ─────────────────────────────────────────────
+
+export type CryptoAsset = "BTC" | "ETH" | "DOGE";
+
+export interface AssetConfig {
+  symbol: string;
+  name: string;
+  pairs: string[];
+  decimals: number;
+}
+
+export const ASSET_CONFIG: Record<CryptoAsset, AssetConfig> = {
+  BTC: {
+    symbol: "BTC",
+    name: "Bitcoin",
+    pairs: ["BTC/USDT", "BTC/USD", "BTC/USDC", "BTC/EUR", "BTC/BUSD", "BTC/NIS", "BTC/ILS"],
+    decimals: 8,
+  },
+  ETH: {
+    symbol: "ETH",
+    name: "Ethereum",
+    pairs: ["ETH/USDT", "ETH/USD", "ETH/USDC", "ETH/EUR", "ETH/BTC"],
+    decimals: 6,
+  },
+  DOGE: {
+    symbol: "DOGE",
+    name: "Dogecoin",
+    pairs: ["DOGE/USDT", "DOGE/USD", "DOGE/USDC", "DOGE/EUR", "DOGE/BTC"],
+    decimals: 2,
+  },
+};
+
 export interface FeeStructure {
   makerFee: number;
   takerFee: number;
@@ -105,7 +137,7 @@ export interface FeeTier {
 export interface CcxtFeeData {
   takerFee: number;             // percent, e.g. 0.1 means 0.1%
   makerFee: number;             // percent
-  withdrawalFeeBTC: number | null;
+  withdrawalFee: number | null; // withdrawal fee in the asset's unit
   fiatDepositFee: string;       // human-readable description
   fiatWithdrawalFee: string;    // human-readable description
   feeTiers: FeeTier[];
@@ -139,7 +171,7 @@ export interface MarketSimulationResult {
   amountUnfilled: number;
 }
 
-export type ExchangeRegion = "Global" | "Americas" | "Europe" | "Asia" | "Israel" | "Other";
+export type ExchangeRegion = "Global" | "Americas" | "Europe" | "APAC" | "MENA" | "Africa" | "Israel" | "Other";
 
 export type ExchangeHealthStatus = "healthy" | "degraded" | "down" | "unknown";
 
@@ -153,6 +185,8 @@ export interface CcxtExchangeData {
   featured: boolean;
   price: number | null;
   tradingPair: string;
+  assetSymbol: string;
+  isDex: boolean;
   fees: CcxtFeeData;
   orderBook: OrderBookData | null;
   simulation: MarketSimulationResult | null;

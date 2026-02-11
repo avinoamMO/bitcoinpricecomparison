@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchAllCcxtData } from "@/lib/ccxt-service";
 import { exchangeCache, PRICE_TTL_MS, FEE_TTL_MS } from "@/lib/exchange-cache";
 import { simulateMarketBuy } from "@/lib/market-simulation";
-import { CcxtApiResponse, CcxtExchangeData } from "@/types";
+import { CcxtApiResponse, CcxtExchangeData, CryptoAsset } from "@/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Allow up to 60s for fetching 100+ exchanges
@@ -13,7 +13,13 @@ export async function GET(request: NextRequest) {
     const amount = parseFloat(searchParams.get("amount") || "1000");
     const investmentAmount = isNaN(amount) || amount <= 0 ? 1000 : amount;
 
-    const { exchanges, totalDiscovered } = await fetchAllCcxtData();
+    const assetParam = (searchParams.get("asset") || "BTC").toUpperCase();
+    const validAssets: CryptoAsset[] = ["BTC", "ETH", "DOGE"];
+    const asset: CryptoAsset = validAssets.includes(assetParam as CryptoAsset)
+      ? (assetParam as CryptoAsset)
+      : "BTC";
+
+    const { exchanges, totalDiscovered } = await fetchAllCcxtData(asset);
 
     // Run market buy simulation for each exchange that has order book data
     const exchangesWithSimulation: CcxtExchangeData[] = exchanges.map((ex) => {

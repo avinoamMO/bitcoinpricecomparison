@@ -17,6 +17,8 @@ export function FeeSummaryBar({ exchanges }: FeeSummaryBarProps) {
   const validExchanges = exchanges.filter((e) => e.status === "ok");
   if (validExchanges.length === 0) return null;
 
+  const assetSymbol = validExchanges[0]?.assetSymbol || "BTC";
+
   const winners: WinnerInfo[] = [];
 
   // Lowest taker fee
@@ -57,21 +59,21 @@ export function FeeSummaryBar({ exchanges }: FeeSummaryBarProps) {
     });
   }
 
-  // Lowest BTC withdrawal fee
+  // Lowest withdrawal fee (asset-specific)
   const withWithdrawal = validExchanges.filter(
-    (e) => e.fees.withdrawalFeeBTC != null
+    (e) => e.fees.withdrawalFee != null
   );
   if (withWithdrawal.length > 0) {
     const bestWithdrawal = [...withWithdrawal].sort(
       (a, b) =>
-        (a.fees.withdrawalFeeBTC ?? Infinity) -
-        (b.fees.withdrawalFeeBTC ?? Infinity)
+        (a.fees.withdrawalFee ?? Infinity) -
+        (b.fees.withdrawalFee ?? Infinity)
     )[0];
     winners.push({
-      category: "Lowest BTC Withdrawal",
+      category: `Lowest ${assetSymbol} Withdrawal`,
       winner: bestWithdrawal.name,
-      value: `${bestWithdrawal.fees.withdrawalFeeBTC} BTC`,
-      description: "Cheapest to move BTC out",
+      value: `${bestWithdrawal.fees.withdrawalFee} ${assetSymbol}`,
+      description: `Cheapest to move ${assetSymbol} out`,
     });
   }
 
@@ -90,7 +92,7 @@ export function FeeSummaryBar({ exchanges }: FeeSummaryBarProps) {
       category: "Best USD Price",
       winner: bestPrice.name,
       value: `$${bestPrice.price!.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      description: "Lowest BTC buy price",
+      description: `Lowest ${assetSymbol} buy price`,
     });
   }
 
@@ -105,7 +107,7 @@ export function FeeSummaryBar({ exchanges }: FeeSummaryBarProps) {
     winners.push({
       category: "Deepest Liquidity",
       winner: deepest.name,
-      value: `${(deepest.orderBook!.bidDepth + deepest.orderBook!.askDepth).toFixed(2)} BTC`,
+      value: `${(deepest.orderBook!.bidDepth + deepest.orderBook!.askDepth).toFixed(2)} ${assetSymbol}`,
       description: "Top 10 levels combined",
     });
   }

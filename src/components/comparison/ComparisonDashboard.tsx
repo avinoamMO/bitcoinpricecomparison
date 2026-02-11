@@ -8,13 +8,15 @@ import {
   Currency,
   DepositMethod,
   ExchangeRegion,
+  CryptoAsset,
+  ASSET_CONFIG,
 } from "@/types";
 import { AmountInput } from "./AmountInput";
 import { ComparisonTable } from "./ComparisonTable";
 import { ExchangeCardView } from "./ExchangeCardView";
 import { CcxtComparisonTable } from "./CcxtComparisonTable";
 import { FeeSummaryBar } from "./FeeSummaryBar";
-import { ExchangeFilters, SortOption } from "./ExchangeFilters";
+import { ExchangeFilters, SortOption, CexDexFilter } from "./ExchangeFilters";
 import {
   TrendingUp,
   RefreshCw,
@@ -41,6 +43,7 @@ export function ComparisonDashboard() {
   const [currency, setCurrency] = useState<Currency>("USD");
   const [depositMethod, setDepositMethod] =
     useState<DepositMethod>("bank_transfer");
+  const [asset, setAsset] = useState<CryptoAsset>("BTC");
   const [results, setResults] = useState<ComparisonResult[]>([]);
   const [ccxtData, setCcxtData] = useState<CcxtExchangeData[]>([]);
   const [totalDiscovered, setTotalDiscovered] = useState(0);
@@ -58,6 +61,7 @@ export function ComparisonDashboard() {
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [selectedExchangeIds, setSelectedExchangeIds] = useState<Set<string>>(new Set());
+  const [cexDexFilter, setCexDexFilter] = useState<CexDexFilter>("all");
 
   const fetchData = useCallback(async () => {
     if (amount <= 0) return;
@@ -75,7 +79,7 @@ export function ComparisonDashboard() {
             mode: "buy",
           })}`
         ),
-        fetch(`/api/ccxt?amount=${encodeURIComponent(String(amount))}`),
+        fetch(`/api/ccxt?amount=${encodeURIComponent(String(amount))}&asset=${encodeURIComponent(asset)}`),
       ]);
 
       // Process comparison results
@@ -115,7 +119,7 @@ export function ComparisonDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [amount, currency, depositMethod]);
+  }, [amount, currency, depositMethod, asset]);
 
   useEffect(() => {
     const t = setTimeout(fetchData, 300);
@@ -175,6 +179,13 @@ export function ComparisonDashboard() {
     // Region filter
     if (selectedRegion !== "All") {
       filtered = filtered.filter((e) => e.region === selectedRegion);
+    }
+
+    // CEX/DEX filter
+    if (cexDexFilter === "cex") {
+      filtered = filtered.filter((e) => !e.isDex);
+    } else if (cexDexFilter === "dex") {
+      filtered = filtered.filter((e) => e.isDex);
     }
 
     // Country filter
@@ -242,7 +253,7 @@ export function ComparisonDashboard() {
     }
 
     return filtered;
-  }, [ccxtData, searchQuery, selectedRegion, selectedCountry, sortBy, showFeaturedOnly, selectedExchangeIds]);
+  }, [ccxtData, searchQuery, selectedRegion, selectedCountry, sortBy, showFeaturedOnly, selectedExchangeIds, cexDexFilter]);
 
   // Pagination
   const displayedExchanges = useMemo(() => {
@@ -268,12 +279,12 @@ export function ComparisonDashboard() {
       {/* Hero */}
       <div className="text-center space-y-4">
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground">
-          Compare Bitcoin ROI
+          Compare {ASSET_CONFIG[asset].name} ROI
           <br />
           <span className="text-gold">Across Exchanges</span>
         </h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Find the cheapest way to buy Bitcoin. Real-time comparison across{" "}
+          Find the cheapest way to buy {ASSET_CONFIG[asset].name}. Real-time comparison across{" "}
           {totalResponsive > 0
             ? `${totalResponsive}+ exchanges`
             : "all major exchanges"}{" "}
@@ -288,6 +299,8 @@ export function ComparisonDashboard() {
             amount={amount}
             currency={currency}
             depositMethod={depositMethod}
+            asset={asset}
+            onAssetChange={setAsset}
             onAmountChange={setAmount}
             onCurrencyChange={setCurrency}
             onDepositMethodChange={setDepositMethod}
@@ -399,6 +412,8 @@ export function ComparisonDashboard() {
             onSearchChange={setSearchQuery}
             selectedRegion={selectedRegion}
             onRegionChange={setSelectedRegion}
+            cexDexFilter={cexDexFilter}
+            onCexDexFilterChange={setCexDexFilter}
             selectedCountry={selectedCountry}
             onCountryChange={setSelectedCountry}
             availableCountries={availableCountries}

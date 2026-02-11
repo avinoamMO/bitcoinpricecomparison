@@ -209,10 +209,10 @@ function ExchangeCard({
           <div className="text-xs text-muted-foreground">Limit orders</div>
         </div>
         <div className="bg-muted rounded-lg p-3">
-          <div className="text-xs text-muted-foreground">BTC Withdrawal</div>
+          <div className="text-xs text-muted-foreground">{exchange.assetSymbol || "BTC"} Withdrawal</div>
           <div className="text-sm font-mono font-semibold text-gold-light">
-            {exchange.fees.withdrawalFeeBTC != null
-              ? `${exchange.fees.withdrawalFeeBTC} BTC`
+            {exchange.fees.withdrawalFee != null
+              ? `${exchange.fees.withdrawalFee} ${exchange.assetSymbol || "BTC"}`
               : "N/A"}
           </div>
         </div>
@@ -276,13 +276,13 @@ function ExchangeCard({
           <div>
             <span className="text-muted-foreground">Bid depth (top 10): </span>
             <span className="text-crypto-green font-mono">
-              {exchange.orderBook.bidDepth.toFixed(4)} BTC
+              {exchange.orderBook.bidDepth.toFixed(4)} {exchange.assetSymbol || "BTC"}
             </span>
           </div>
           <div>
             <span className="text-muted-foreground">Ask depth (top 10): </span>
             <span className="text-crypto-red font-mono">
-              {exchange.orderBook.askDepth.toFixed(4)} BTC
+              {exchange.orderBook.askDepth.toFixed(4)} {exchange.assetSymbol || "BTC"}
             </span>
           </div>
         </div>

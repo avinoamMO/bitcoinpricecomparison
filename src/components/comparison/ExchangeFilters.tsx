@@ -5,14 +5,22 @@ import { CcxtExchangeData, ExchangeRegion } from "@/types";
 import { Search, Filter, ChevronDown, ChevronUp, Check, X } from "lucide-react";
 
 export type SortOption = "best_price" | "lowest_fees" | "alphabetical" | "highest_volume";
+export type CexDexFilter = "all" | "cex" | "dex";
 
 const REGIONS: { value: ExchangeRegion | "All"; label: string }[] = [
   { value: "All", label: "All" },
   { value: "Global", label: "Global" },
   { value: "Americas", label: "Americas" },
   { value: "Europe", label: "Europe" },
-  { value: "Asia", label: "Asia" },
+  { value: "APAC", label: "APAC" },
+  { value: "MENA", label: "MENA" },
   { value: "Israel", label: "Israel" },
+];
+
+const CEX_DEX_OPTIONS: { value: CexDexFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "cex", label: "CEX Only" },
+  { value: "dex", label: "DEX Only" },
 ];
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -27,6 +35,8 @@ interface ExchangeFiltersProps {
   onSearchChange: (query: string) => void;
   selectedRegion: ExchangeRegion | "All";
   onRegionChange: (region: ExchangeRegion | "All") => void;
+  cexDexFilter: CexDexFilter;
+  onCexDexFilterChange: (filter: CexDexFilter) => void;
   selectedCountry: string;
   onCountryChange: (country: string) => void;
   availableCountries: string[];
@@ -50,6 +60,8 @@ export function ExchangeFilters({
   onSearchChange,
   selectedRegion,
   onRegionChange,
+  cexDexFilter,
+  onCexDexFilterChange,
   selectedCountry,
   onCountryChange,
   availableCountries,
@@ -150,7 +162,7 @@ export function ExchangeFilters({
         </div>
       </div>
 
-      {/* Region tabs */}
+      {/* Region tabs + CEX/DEX filter */}
       <div className="flex flex-wrap gap-1.5">
         {REGIONS.map((region) => (
           <button
@@ -163,6 +175,22 @@ export function ExchangeFilters({
             }`}
           >
             {region.label}
+          </button>
+        ))}
+
+        {/* CEX / DEX filter */}
+        <span className="mx-1 border-l border-border" />
+        {CEX_DEX_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onCexDexFilterChange(opt.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              cexDexFilter === opt.value
+                ? "bg-crypto-purple/20 text-crypto-purple border border-crypto-purple/30"
+                : "bg-muted text-muted-foreground border border-border hover:border-crypto-purple/30"
+            }`}
+          >
+            {opt.label}
           </button>
         ))}
 
