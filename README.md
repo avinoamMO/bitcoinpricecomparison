@@ -1,5 +1,7 @@
 # CryptoROI - Bitcoin Exchange Comparison Tool
 
+[![CI](https://github.com/avinoamMO/bitcoinpricecomparison/actions/workflows/ci.yml/badge.svg)](https://github.com/avinoamMO/bitcoinpricecomparison/actions/workflows/ci.yml)
+
 **Find the cheapest way to buy Bitcoin.** CryptoROI compares real-time prices and total costs across 100+ exchanges, so you keep more BTC in your wallet.
 
 **[Live Demo](https://bitcoinpricecomparison.vercel.app)**
