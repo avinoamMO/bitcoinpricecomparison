@@ -6,7 +6,7 @@ import { adConfig } from "@/lib/ad-config";
 /**
  * Horizontal banner ad (728x90 responsive).
  * Used at top of page and between content sections.
- * Renders nothing when no ad network is configured.
+ * Shows a styled placeholder when no ad network is configured.
  */
 export function AdBanner() {
   const network = adConfig.activeNetwork;
@@ -29,7 +29,30 @@ export function AdBanner() {
     }
   }, [network]);
 
-  if (!network) return null;
+  if (!network) {
+    return (
+      <div className="w-full flex justify-center my-4">
+        <div className="w-full max-w-[728px]">
+          <div className="rounded-lg border border-border/40 bg-card/30 px-6 py-4 flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium text-muted-foreground/70">
+                Advertise Here
+              </span>
+              <span className="text-xs text-muted-foreground/40">
+                Reach crypto traders and investors
+              </span>
+            </div>
+            <a
+              href="mailto:advertise@cryptoroi.com"
+              className="shrink-0 text-xs font-medium text-primary/60 hover:text-primary transition-colors border border-primary/20 hover:border-primary/40 rounded-md px-3 py-1.5"
+            >
+              Get in touch
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ─── AdSense ────────────────────────────────────────────────────────────────
   if (network === "adsense" && adConfig.adsense?.slotBanner) {

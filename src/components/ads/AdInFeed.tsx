@@ -6,7 +6,7 @@ import { adConfig } from "@/lib/ad-config";
 /**
  * Native-style in-feed ad that blends between exchange cards.
  * Less intrusive than banners — styled to match the card grid.
- * Renders nothing when no ad network is configured.
+ * Shows a styled placeholder when no ad network is configured.
  */
 export function AdInFeed() {
   const network = adConfig.activeNetwork;
@@ -29,7 +29,26 @@ export function AdInFeed() {
     }
   }, [network]);
 
-  if (!network) return null;
+  if (!network) {
+    return (
+      <div className="rounded-xl border border-border/30 bg-card/20 p-5 flex flex-col items-center justify-center min-h-[200px] gap-3">
+        <div className="flex flex-col items-center gap-1 text-center">
+          <span className="text-sm font-medium text-muted-foreground/60">
+            Sponsor This Comparison
+          </span>
+          <span className="text-xs text-muted-foreground/35 max-w-[240px]">
+            Put your exchange or crypto brand in front of active traders
+          </span>
+        </div>
+        <a
+          href="mailto:advertise@cryptoroi.com"
+          className="text-xs font-medium text-primary/60 hover:text-primary transition-colors border border-primary/20 hover:border-primary/40 rounded-md px-3 py-1.5"
+        >
+          Learn more
+        </a>
+      </div>
+    );
+  }
 
   // ─── AdSense ────────────────────────────────────────────────────────────────
   if (network === "adsense" && adConfig.adsense?.slotInFeed) {
