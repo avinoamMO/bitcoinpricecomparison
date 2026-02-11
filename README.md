@@ -189,6 +189,45 @@ npm start
 | Bit2C | Israel | ILS, USD | 0.50% |
 | Bits of Gold | Israel | ILS, EUR | 0.50% |
 
+## Monetization (Display Ads)
+
+CryptoROI supports optional display ads via Google AdSense, Coinzilla (crypto-specific), or a custom ad network. Ads are fully opt-in: if no environment variables are set, zero ad markup renders and no external scripts are loaded.
+
+### Configuring Google AdSense
+
+1. Sign up at [Google AdSense](https://www.google.com/adsense)
+2. Get your publisher client ID (e.g. `ca-pub-1234567890123456`)
+3. Create ad units for banner, sidebar, and in-feed slots
+4. Set the environment variables:
+   ```bash
+   NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-1234567890123456
+   NEXT_PUBLIC_ADSENSE_SLOT_BANNER=1234567890
+   NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR=0987654321
+   NEXT_PUBLIC_ADSENSE_SLOT_INFEED=1122334455
+   ```
+5. Update `public/ads.txt` with your publisher ID
+
+### Configuring Coinzilla
+
+1. Sign up at [Coinzilla](https://coinzilla.com) (crypto-focused, higher CPMs)
+2. Create a zone and get the zone ID
+3. Set:
+   ```bash
+   NEXT_PUBLIC_COINZILLA_ZONE_ID=your-zone-id
+   ```
+
+### Where ads appear
+
+| Slot | Location | Format |
+|------|----------|--------|
+| Banner | Between fee summary bar and exchange list | 728x90 responsive |
+| Banner | Below comparison tool, above educational content | 728x90 responsive |
+| In-feed | After every 3rd exchange card (max 2) | Fluid native |
+
+### Disabling ads
+
+Simply leave the ad environment variables empty (or unset). No ads will render, no external scripts will load.
+
 ## Contributing
 
 1. Fork the repo

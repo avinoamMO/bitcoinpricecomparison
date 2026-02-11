@@ -1,0 +1,5 @@
+# ads.txt - Authorized Digital Sellers
+# https://iabtechlab.com/ads-txt/
+#
+# Replace with your actual AdSense publisher ID after approval.
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

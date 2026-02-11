@@ -9,6 +9,7 @@ import {
   WifiOff,
   AlertTriangle,
 } from "lucide-react";
+import { AdInFeed } from "@/components/ads";
 
 function formatPrice(price: number | null, pair: string): string {
   if (price == null) return "N/A";
@@ -74,16 +75,32 @@ export function ExchangeCardView({
     ? Math.min(...usdExchanges.map((e) => e.price!))
     : null;
 
+  // Build items list, injecting an in-feed ad after every 3rd card.
+  // Maximum 2 in-feed ads to keep the page non-spammy.
+  const items: React.ReactNode[] = [];
+  let adCount = 0;
+  const MAX_INFEED_ADS = 2;
+
+  exchanges.forEach((exchange, index) => {
+    items.push(
+      <ExchangeCard
+        key={exchange.id}
+        exchange={exchange}
+        bestPrice={bestUSDPrice}
+        investmentAmount={investmentAmount}
+      />
+    );
+
+    // Insert ad after every 3rd card (positions 2, 5, ...)
+    if ((index + 1) % 3 === 0 && adCount < MAX_INFEED_ADS) {
+      items.push(<AdInFeed key={`ad-infeed-${index}`} />);
+      adCount++;
+    }
+  });
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      {exchanges.map((exchange) => (
-        <ExchangeCard
-          key={exchange.id}
-          exchange={exchange}
-          bestPrice={bestUSDPrice}
-          investmentAmount={investmentAmount}
-        />
-      ))}
+      {items}
     </div>
   );
 }

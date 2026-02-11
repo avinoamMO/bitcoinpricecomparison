@@ -26,6 +26,7 @@ import {
   Table2,
   Loader2,
 } from "lucide-react";
+import { AdBanner } from "@/components/ads";
 
 const CS: Record<string, string> = {
   USD: "$",
@@ -336,6 +337,11 @@ export function ComparisonDashboard() {
           <FeeSummaryBar exchanges={ccxtData} />
         </div>
       )}
+
+      {/* Ad Banner — between summary and exchange list */}
+      <div className="max-w-6xl mx-auto">
+        <AdBanner />
+      </div>
 
       {/* Controls bar */}
       <div className="flex items-center justify-between max-w-6xl mx-auto">

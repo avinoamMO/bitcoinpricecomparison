@@ -1,9 +1,16 @@
 import { ComparisonDashboard } from "@/components/comparison/ComparisonDashboard";
+import { AdBanner } from "@/components/ads";
 
 export default function HomePage() {
   return (
     <>
       <ComparisonDashboard />
+
+      {/* Ad Banner — between comparison tool and educational content */}
+      <div className="mt-12 max-w-4xl mx-auto">
+        <AdBanner />
+      </div>
+
       <section className="mt-20 max-w-4xl mx-auto">
         <div className="space-y-8">
           <div>
