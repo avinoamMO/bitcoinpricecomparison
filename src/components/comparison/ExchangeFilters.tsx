@@ -248,6 +248,7 @@ export function ExchangeFilters({
         {/* Exchange picker toggle */}
         <button
           onClick={() => setShowExchangePicker(!showExchangePicker)}
+          aria-expanded={showExchangePicker}
           className={`ml-auto px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${
             selectedExchangeIds.size > 0
               ? "bg-gold/20 text-gold border border-gold/30"
@@ -331,6 +332,7 @@ export function ExchangeFilters({
               value={exchangeSearch}
               onChange={(e) => setExchangeSearch(e.target.value)}
               placeholder="Find exchange..."
+              aria-label="Search exchanges to compare"
               className="w-full h-8 pl-8 pr-4 bg-muted border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
             />
           </div>
@@ -348,9 +350,10 @@ export function ExchangeFilters({
                     {ex?.name || id}
                     <button
                       onClick={() => onToggleExchange(id)}
+                      aria-label={`Remove ${ex?.name || id}`}
                       className="hover:text-gold-light"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3" aria-hidden="true" />
                     </button>
                   </span>
                 );

@@ -79,31 +79,31 @@ export function ExchangeComparisonTable({
       <table className="w-full text-sm text-left border-collapse">
         <thead>
           <tr className="border-b-2 border-border text-muted-foreground text-xs uppercase tracking-wider">
-            <th className="py-3 px-3">#</th>
-            <th className="py-3 px-3">Exchange</th>
-            <th className="py-3 px-3 text-right">Price</th>
-            <th className="py-3 px-3 text-right">Taker</th>
-            <th className="py-3 px-3 text-right">Spread</th>
+            <th scope="col" className="py-3 px-3">#</th>
+            <th scope="col" className="py-3 px-3">Exchange</th>
+            <th scope="col" className="py-3 px-3 text-right">Price</th>
+            <th scope="col" className="py-3 px-3 text-right">Taker</th>
+            <th scope="col" className="py-3 px-3 text-right">Spread</th>
             {hasSimulation && (
               <>
-                <th className="py-3 px-3 text-right hidden lg:table-cell">
+                <th scope="col" className="py-3 px-3 text-right hidden lg:table-cell">
                   Avg Fill
                 </th>
-                <th className="py-3 px-3 text-right hidden md:table-cell">
+                <th scope="col" className="py-3 px-3 text-right hidden md:table-cell">
                   Slippage
                 </th>
-                <th className="py-3 px-3 text-right">
+                <th scope="col" className="py-3 px-3 text-right">
                   {assetSymbol} Received
                 </th>
               </>
             )}
             {!hasSimulation && (
-              <th className="py-3 px-3 text-right">
+              <th scope="col" className="py-3 px-3 text-right">
                 Cost on ${investmentAmount.toLocaleString()}
               </th>
             )}
-            <th className="py-3 px-3 text-center">Status</th>
-            <th className="py-3 px-3"></th>
+            <th scope="col" className="py-3 px-3 text-center">Status</th>
+            <th scope="col" className="py-3 px-3"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>

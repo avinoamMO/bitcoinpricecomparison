@@ -10,7 +10,7 @@ export function Footer() {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
-                <Bitcoin className="h-4 w-4 text-gold" />
+                <Bitcoin className="h-4 w-4 text-gold" aria-hidden="true" />
               </div>
               <span className="text-lg font-bold text-foreground">
                 Crypto<span className="text-gold">ROI</span>
@@ -55,26 +55,50 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/learn/how-exchange-fees-work"
+                  href="/learn"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  How Fees Work
+                  All Articles
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/learn/hidden-costs-buying-bitcoin"
+                  href="/learn/compare-crypto-exchange-fees"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Hidden Costs
+                  Compare Exchange Fees
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/learn/how-to-choose-exchange"
+                  href="/learn/binance-vs-coinbase-fees"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Choosing an Exchange
+                  Binance vs Coinbase
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/learn/best-crypto-exchanges-beginners"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Best for Beginners
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/learn/crypto-withdrawal-fees-explained"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Withdrawal Fees
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/learn/israeli-crypto-exchanges-bit2c-vs-bits-of-gold"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Bit2C vs Bits of Gold
                 </Link>
               </li>
             </ul>

@@ -337,6 +337,7 @@ function ExchangeCard({
         <div>
           <button
             onClick={() => setShowTiers(!showTiers)}
+            aria-expanded={showTiers}
             className="text-xs text-crypto-blue hover:text-crypto-blue/80 flex items-center gap-1"
           >
             <span>
@@ -351,9 +352,9 @@ function ExchangeCard({
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="text-muted-foreground border-b border-border">
-                    <th className="py-1 pr-3">Tier</th>
-                    <th className="py-1 pr-3">Taker</th>
-                    <th className="py-1">Maker</th>
+                    <th scope="col" className="py-1 pr-3">Tier</th>
+                    <th scope="col" className="py-1 pr-3">Taker</th>
+                    <th scope="col" className="py-1">Maker</th>
                   </tr>
                 </thead>
                 <tbody>

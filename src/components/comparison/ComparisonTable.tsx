@@ -18,7 +18,7 @@ export function ComparisonTable({ results, currency, isLoading }: Props) {
     <div className="space-y-3">
       {results.map((r, i) => (
         <div key={r.exchangeId} className={`rounded-xl border transition-all duration-300 animate-slide-up ${r.isBestDeal ? "border-gold/50 bg-gold/5 shadow-lg shadow-gold/5" : "border-border bg-card"}`} style={{animationDelay:`${i*50}ms`}}>
-          <div className="p-4 sm:p-5 cursor-pointer" onClick={() => setExp(exp === r.exchangeId ? null : r.exchangeId)}>
+          <div className="p-4 sm:p-5 cursor-pointer" role="button" tabIndex={0} aria-expanded={exp === r.exchangeId} onClick={() => setExp(exp === r.exchangeId ? null : r.exchangeId)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExp(exp === r.exchangeId ? null : r.exchangeId); } }}>
             <div className="flex items-center gap-4">
               <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${r.isBestDeal ? "bg-gold text-black" : "bg-muted text-muted-foreground"}`}>
                 {r.isBestDeal ? <Trophy className="h-4 w-4"/> : r.rank}

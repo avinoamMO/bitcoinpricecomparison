@@ -393,7 +393,7 @@ export function ComparisonDashboard() {
         <div className="max-w-2xl mx-auto animate-fade-in">
           <div className="rounded-xl bg-gradient-to-r from-success/10 to-gold/10 border border-success/20 p-4 flex items-center gap-3">
             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-success" />
+              <TrendingUp className="h-5 w-5 text-success" aria-hidden="true" />
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">
@@ -425,7 +425,7 @@ export function ComparisonDashboard() {
       {/* Controls bar */}
       <div className="flex items-center justify-between max-w-6xl mx-auto">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Clock className="h-3.5 w-3.5" />
+          <Clock className="h-3.5 w-3.5" aria-hidden="true" />
           {lastUpdated && (
             <span>Updated {lastUpdated.toLocaleTimeString()}</span>
           )}
@@ -484,7 +484,7 @@ export function ComparisonDashboard() {
 
       {/* Error */}
       {error && (
-        <div className="max-w-6xl mx-auto rounded-xl bg-danger/10 border border-danger/20 p-4 text-sm text-danger">
+        <div role="alert" className="max-w-6xl mx-auto rounded-xl bg-danger/10 border border-danger/20 p-4 text-sm text-danger">
           {error}
         </div>
       )}
@@ -530,8 +530,8 @@ export function ComparisonDashboard() {
 
       {/* Loading indicator for initial load */}
       {isLoading && exchangeData.length === 0 && (
-        <div className="max-w-6xl mx-auto flex items-center justify-center py-12 gap-3 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
+        <div aria-busy="true" aria-live="polite" className="max-w-6xl mx-auto flex items-center justify-center py-12 gap-3 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
           <span>Fetching prices from exchanges...</span>
         </div>
       )}

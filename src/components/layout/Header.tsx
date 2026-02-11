@@ -13,7 +13,7 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gold/10 group-hover:bg-gold/20 transition-colors">
-              <Bitcoin className="h-5 w-5 text-gold" />
+              <Bitcoin className="h-5 w-5 text-gold" aria-hidden="true" />
             </div>
             <span className="text-xl font-bold text-foreground">
               Crypto<span className="text-gold">ROI</span>
@@ -21,7 +21,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav aria-label="Main navigation" className="hidden md:flex items-center gap-6">
             <Link
               href="/"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -35,7 +35,7 @@ export function Header() {
               Exchanges
             </Link>
             <Link
-              href="/learn/how-exchange-fees-work"
+              href="/learn"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Learn
@@ -46,7 +46,8 @@ export function Header() {
           <button
             className="md:hidden p-2 text-muted-foreground hover:text-foreground"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? (
               <X className="h-5 w-5" />
@@ -58,7 +59,7 @@ export function Header() {
 
         {/* Mobile Nav */}
         {mobileMenuOpen && (
-          <nav className="md:hidden border-t border-border py-4 animate-slide-up">
+          <nav aria-label="Mobile navigation" className="md:hidden border-t border-border py-4 animate-slide-up">
             <div className="flex flex-col gap-3">
               <Link
                 href="/"
@@ -75,7 +76,7 @@ export function Header() {
                 Exchanges
               </Link>
               <Link
-                href="/learn/how-exchange-fees-work"
+                href="/learn"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
                 onClick={() => setMobileMenuOpen(false)}
               >
