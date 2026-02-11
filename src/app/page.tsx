@@ -9,7 +9,7 @@ export default function HomePage() {
           <div>
             <h2 className="text-2xl font-bold text-foreground mb-4">Why Compare Bitcoin Exchange Fees?</h2>
             <p className="text-muted-foreground leading-relaxed">
-              The difference between the cheapest and most expensive way to buy Bitcoin can be as high as 5% of your investment. On a $10,000 purchase, that is $500 in unnecessary fees. CryptoROI helps you find the best deal by comparing real-time prices, trading fees, deposit costs, spreads, and withdrawal fees across 7 major exchanges.
+              The difference between the cheapest and most expensive way to buy Bitcoin can be as high as 5% of your investment. On a $10,000 purchase, that is $500 in unnecessary fees. CryptoROI helps you find the best deal by comparing real-time prices, trading fees, deposit costs, spreads, and withdrawal fees across 100+ cryptocurrency exchanges worldwide.
             </p>
           </div>
           <div>
@@ -35,7 +35,7 @@ export default function HomePage() {
           <div>
             <h2 className="text-2xl font-bold text-foreground mb-4">Exchanges We Compare</h2>
             <p className="text-muted-foreground leading-relaxed">
-              We compare 7 major cryptocurrency exchanges including Binance, Coinbase, Kraken, Bybit, OKX, and Israeli exchanges Bit2C and Bits of Gold.
+              We dynamically compare 100+ cryptocurrency exchanges using CCXT, including featured exchanges Binance, Coinbase, Kraken, Bybit, OKX, and Israeli exchanges Bit2C and Bits of Gold. Filter by region, search by name, and sort by price, fees, or liquidity.
             </p>
           </div>
         </div>

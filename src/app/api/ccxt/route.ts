@@ -4,14 +4,18 @@ import { exchangeCache, PRICE_TTL_MS, FEE_TTL_MS } from "@/lib/exchange-cache";
 import { CcxtApiResponse } from "@/types";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // Allow up to 60s for fetching 100+ exchanges
 
 export async function GET() {
   try {
-    const exchanges = await fetchAllCcxtData();
+    const { exchanges, totalDiscovered } = await fetchAllCcxtData();
+    const totalResponsive = exchanges.filter((e) => e.status === "ok").length;
 
     const response: CcxtApiResponse = {
       exchanges,
       timestamp: new Date().toISOString(),
+      totalDiscovered,
+      totalResponsive,
       cache: {
         pricesCachedAt: (() => {
           const ts = exchangeCache.getTimestamp("ccxt:price:binance");

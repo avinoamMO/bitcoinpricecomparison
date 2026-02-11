@@ -2,8 +2,13 @@
 
 import { useState } from "react";
 import { CcxtExchangeData } from "@/types";
-import { ExternalLink } from "lucide-react";
-import { exchanges as exchangeStaticData } from "@/data/exchanges";
+import {
+  ExternalLink,
+  Star,
+  Wifi,
+  WifiOff,
+  AlertTriangle,
+} from "lucide-react";
 
 function formatPrice(price: number | null, pair: string): string {
   if (price == null) return "N/A";
@@ -14,14 +19,56 @@ function formatPrice(price: number | null, pair: string): string {
   return `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function HealthBadge({ exchange }: { exchange: CcxtExchangeData }) {
+  if (exchange.status === "ok" && exchange.healthStatus === "healthy") {
+    return (
+      <span className="flex items-center gap-1 text-[10px] text-crypto-green">
+        <Wifi className="h-3 w-3" /> Live
+      </span>
+    );
+  }
+  if (exchange.healthStatus === "degraded") {
+    return (
+      <span className="flex items-center gap-1 text-[10px] text-gold">
+        <AlertTriangle className="h-3 w-3" /> Degraded
+      </span>
+    );
+  }
+  if (exchange.healthStatus === "down") {
+    return (
+      <span className="flex items-center gap-1 text-[10px] text-crypto-red">
+        <WifiOff className="h-3 w-3" /> Down
+      </span>
+    );
+  }
+  if (exchange.status === "ok") {
+    return (
+      <span className="flex items-center gap-1 text-[10px] text-crypto-green">
+        <Wifi className="h-3 w-3" /> Live
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1 text-[10px] text-crypto-red">
+      <WifiOff className="h-3 w-3" /> Error
+    </span>
+  );
+}
+
 interface ExchangeCardViewProps {
   exchanges: CcxtExchangeData[];
   investmentAmount: number;
 }
 
-export function ExchangeCardView({ exchanges, investmentAmount }: ExchangeCardViewProps) {
+export function ExchangeCardView({
+  exchanges,
+  investmentAmount,
+}: ExchangeCardViewProps) {
   const usdExchanges = exchanges.filter(
-    (e) => e.price != null && !e.tradingPair.includes("ILS") && !e.tradingPair.includes("NIS")
+    (e) =>
+      e.price != null &&
+      !e.tradingPair.includes("ILS") &&
+      !e.tradingPair.includes("NIS")
   );
   const bestUSDPrice = usdExchanges.length
     ? Math.min(...usdExchanges.map((e) => e.price!))
@@ -47,15 +94,24 @@ interface ExchangeCardProps {
   investmentAmount: number;
 }
 
-function ExchangeCard({ exchange, bestPrice, investmentAmount }: ExchangeCardProps) {
+function ExchangeCard({
+  exchange,
+  bestPrice,
+  investmentAmount,
+}: ExchangeCardProps) {
   const [showTiers, setShowTiers] = useState(false);
 
-  const staticData = exchangeStaticData.find((e) => e.id === exchange.id);
-  const affiliateUrl = staticData?.affiliateUrl || exchange.feePageUrl;
+  const linkUrl =
+    exchange.affiliateUrl || exchange.websiteUrl || exchange.feePageUrl;
 
-  const isILS = exchange.tradingPair.includes("ILS") || exchange.tradingPair.includes("NIS");
+  const isILS =
+    exchange.tradingPair.includes("ILS") ||
+    exchange.tradingPair.includes("NIS");
   const priceDiff =
-    exchange.price != null && bestPrice != null && bestPrice > 0 && !isILS
+    exchange.price != null &&
+    bestPrice != null &&
+    bestPrice > 0 &&
+    !isILS
       ? ((exchange.price - bestPrice) / bestPrice) * 100
       : null;
 
@@ -68,11 +124,11 @@ function ExchangeCard({ exchange, bestPrice, investmentAmount }: ExchangeCardPro
   const totalEffectiveCostTaker = takerCost + spreadCost;
   const totalEffectiveCostMaker = makerCost + spreadCost;
 
-  const borderColor = exchange.israeliExchange
-    ? "border-crypto-blue"
-    : "border-border";
-  const statusColor =
-    exchange.status === "ok" ? "bg-crypto-green" : "bg-crypto-red";
+  const borderColor = exchange.featured
+    ? "border-gold/30"
+    : exchange.israeliExchange
+      ? "border-crypto-blue"
+      : "border-border";
 
   return (
     <div
@@ -85,10 +141,12 @@ function ExchangeCard({ exchange, bestPrice, investmentAmount }: ExchangeCardPro
             <h3 className="text-xl font-bold text-foreground">
               {exchange.name}
             </h3>
-            <span
-              className={`w-2 h-2 rounded-full ${statusColor}`}
-              title={exchange.status}
-            />
+            {exchange.featured && (
+              <span title="Featured exchange">
+                <Star className="h-4 w-4 text-gold fill-gold" />
+              </span>
+            )}
+            <HealthBadge exchange={exchange} />
           </div>
           <p className="text-sm text-muted-foreground">
             {exchange.country}
@@ -97,16 +155,21 @@ function ExchangeCard({ exchange, bestPrice, investmentAmount }: ExchangeCardPro
                 Israeli Exchange
               </span>
             )}
+            <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">
+              {exchange.region}
+            </span>
           </p>
         </div>
-        <a
-          href={exchange.feePageUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-muted-foreground hover:text-foreground underline"
-        >
-          Fee page
-        </a>
+        {exchange.feePageUrl && (
+          <a
+            href={exchange.feePageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground hover:text-foreground underline"
+          >
+            Fee page
+          </a>
+        )}
       </div>
 
       {/* Price */}
@@ -185,25 +248,27 @@ function ExchangeCard({ exchange, bestPrice, investmentAmount }: ExchangeCardPro
       </div>
 
       {/* Effective cost */}
-      <div className="bg-muted/50 border border-border rounded-lg p-3">
-        <div className="text-xs text-muted-foreground mb-2">
-          Effective cost on ${investmentAmount.toLocaleString()} trade
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <span className="text-muted-foreground">Market: </span>
-            <span className="font-mono text-gold">
-              ${totalEffectiveCostTaker.toFixed(2)}
-            </span>
+      {exchange.price != null && (
+        <div className="bg-muted/50 border border-border rounded-lg p-3">
+          <div className="text-xs text-muted-foreground mb-2">
+            Effective cost on ${investmentAmount.toLocaleString()} trade
           </div>
-          <div>
-            <span className="text-muted-foreground">Limit: </span>
-            <span className="font-mono text-crypto-green">
-              ${totalEffectiveCostMaker.toFixed(2)}
-            </span>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <span className="text-muted-foreground">Market: </span>
+              <span className="font-mono text-gold">
+                ${totalEffectiveCostTaker.toFixed(2)}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Limit: </span>
+              <span className="font-mono text-crypto-green">
+                ${totalEffectiveCostMaker.toFixed(2)}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Order book depth */}
       {exchange.orderBook && (
@@ -233,7 +298,9 @@ function ExchangeCard({ exchange, bestPrice, investmentAmount }: ExchangeCardPro
             <span>
               {showTiers ? "Hide" : "Show"} volume discounts
             </span>
-            <span className="text-[10px]">{showTiers ? "\u25B2" : "\u25BC"}</span>
+            <span className="text-[10px]">
+              {showTiers ? "\u25B2" : "\u25BC"}
+            </span>
           </button>
           {showTiers && (
             <div className="mt-2 overflow-x-auto">
@@ -267,14 +334,21 @@ function ExchangeCard({ exchange, bestPrice, investmentAmount }: ExchangeCardPro
       )}
 
       {/* Buy Here button */}
-      <a
-        href={affiliateUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-gold text-black hover:bg-gold-light transition-colors"
-      >
-        Buy Here <ExternalLink className="h-3.5 w-3.5" />
-      </a>
+      {linkUrl && (
+        <a
+          href={linkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`mt-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            exchange.featured
+              ? "bg-gold text-black hover:bg-gold-light"
+              : "bg-muted text-foreground border border-border hover:border-gold/30"
+          }`}
+        >
+          {exchange.featured ? "Buy Here" : "Visit Exchange"}{" "}
+          <ExternalLink className="h-3.5 w-3.5" />
+        </a>
+      )}
 
       {/* Error */}
       {exchange.error && (

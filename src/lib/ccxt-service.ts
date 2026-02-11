@@ -1,16 +1,22 @@
 /**
  * CCXT-powered exchange data service.
- * Fetches real-time prices via fetchTicker(), order book spreads via fetchOrderBook(),
- * and fee structures via exchange.fees.
  *
- * Supports: Binance, Coinbase, Kraken, Bybit, OKX, Bit2C (CCXT native), Bits of Gold (manual)
+ * Dynamically discovers ALL CCXT exchanges that support BTC trading.
+ * Featured exchanges (Binance, Coinbase, Kraken, Bybit, OKX, Bit2C, Bits of Gold)
+ * retain their affiliate links and detailed metadata.
+ *
+ * Features:
+ * - Dynamic discovery of 100+ exchanges from CCXT
+ * - Batched fetching (10 exchanges at a time) with rate limiting
+ * - Exchange health monitoring (auto-hides after 3 consecutive failures)
+ * - Aggressive caching (prices: 30s, fees: 1hr, discovery: 1hr)
+ * - Region-based categorization
  */
 import ccxt, { type Exchange } from "ccxt";
 import {
   CcxtExchangeData,
   CcxtFeeData,
   OrderBookData,
-  FeeTier,
 } from "@/types";
 import {
   exchangeCache,
@@ -18,161 +24,85 @@ import {
   FEE_TTL_MS,
   ORDERBOOK_TTL_MS,
 } from "./exchange-cache";
+import {
+  FEATURED_EXCHANGES,
+  getFeaturedConfig,
+  isFeaturedExchange,
+  EXCHANGE_BLOCKLIST,
+  detectRegion,
+  formatCountry,
+  type FeaturedExchangeConfig,
+} from "./exchange-registry";
+import { exchangeHealth } from "./exchange-health";
 
-// ─── Exchange Configuration ──────────────────────────────────────────
+// ─── Constants ──────────────────────────────────────────────────────
 
-interface ExchangeConfig {
+const BATCH_SIZE = 10;
+const BATCH_DELAY_MS = 200; // ms between batches
+const EXCHANGE_TIMEOUT_MS = 10000;
+const DISCOVERY_TTL_MS = 60 * 60 * 1000; // 1 hour
+const BTC_PAIRS = ["BTC/USDT", "BTC/USD", "BTC/USDC", "BTC/EUR", "BTC/BUSD", "BTC/NIS", "BTC/ILS"];
+
+// ─── Dynamic Exchange Discovery ─────────────────────────────────────
+
+interface DiscoveredExchange {
   id: string;
   name: string;
-  country: string;
-  israeliExchange: boolean;
-  tradingPair: string;
-  fallbackPairs: string[];
-  feePageUrl: string;
-  manualFees?: Partial<CcxtFeeData>;
-  manualFeeTiers?: FeeTier[];
-  /** If true, skip CCXT entirely and use manual data only (Bits of Gold) */
-  manualOnly?: boolean;
+  countries: string[];
+  hasFetchTicker: boolean;
 }
 
-const EXCHANGE_CONFIGS: ExchangeConfig[] = [
-  {
-    id: "binance",
-    name: "Binance",
-    country: "Global (Cayman Islands)",
-    israeliExchange: false,
-    tradingPair: "BTC/USDT",
-    fallbackPairs: ["BTC/USDC"],
-    feePageUrl: "https://www.binance.com/en/fee/schedule",
-    manualFeeTiers: [
-      { tierLabel: "Regular (< $1M)", minVolume: 0, maxVolume: 1000000, takerFee: 0.1, makerFee: 0.1 },
-      { tierLabel: "VIP 1 ($1M-$5M)", minVolume: 1000000, maxVolume: 5000000, takerFee: 0.09, makerFee: 0.08 },
-      { tierLabel: "VIP 2 ($5M-$10M)", minVolume: 5000000, maxVolume: 10000000, takerFee: 0.08, makerFee: 0.06 },
-    ],
-    manualFees: {
-      fiatDepositFee: "Free (bank transfer); 1-2% (card)",
-      fiatWithdrawalFee: "Free (bank transfer)",
-    },
-  },
-  {
-    id: "coinbase",
-    name: "Coinbase Advanced",
-    country: "United States",
-    israeliExchange: false,
-    tradingPair: "BTC/USDT",
-    fallbackPairs: ["BTC/USD", "BTC/USDC"],
-    feePageUrl: "https://www.coinbase.com/advanced-fees",
-    manualFeeTiers: [
-      { tierLabel: "Level 1 (< $10K)", minVolume: 0, maxVolume: 10000, takerFee: 0.6, makerFee: 0.4 },
-      { tierLabel: "Level 2 ($10K-$50K)", minVolume: 10000, maxVolume: 50000, takerFee: 0.4, makerFee: 0.25 },
-      { tierLabel: "Level 3 ($50K-$100K)", minVolume: 50000, maxVolume: 100000, takerFee: 0.25, makerFee: 0.15 },
-    ],
-    manualFees: {
-      fiatDepositFee: "Free (ACH); $10 (wire)",
-      fiatWithdrawalFee: "Free (ACH); $25 (wire)",
-    },
-  },
-  {
-    id: "kraken",
-    name: "Kraken",
-    country: "United States",
-    israeliExchange: false,
-    tradingPair: "BTC/USDT",
-    fallbackPairs: ["BTC/USD"],
-    feePageUrl: "https://www.kraken.com/features/fee-schedule",
-    manualFeeTiers: [
-      { tierLabel: "Starter (< $50K)", minVolume: 0, maxVolume: 50000, takerFee: 0.26, makerFee: 0.16 },
-      { tierLabel: "Intermediate ($50K-$100K)", minVolume: 50000, maxVolume: 100000, takerFee: 0.24, makerFee: 0.14 },
-      { tierLabel: "Pro ($100K-$250K)", minVolume: 100000, maxVolume: 250000, takerFee: 0.22, makerFee: 0.12 },
-    ],
-    manualFees: {
-      fiatDepositFee: "Free (bank transfer)",
-      fiatWithdrawalFee: "$5 (domestic wire); $35 (SWIFT)",
-    },
-  },
-  {
-    id: "bybit",
-    name: "Bybit",
-    country: "Dubai (UAE)",
-    israeliExchange: false,
-    tradingPair: "BTC/USDT",
-    fallbackPairs: ["BTC/USDC"],
-    feePageUrl: "https://www.bybit.com/en/help-center/article/Fee-Structure",
-    manualFeeTiers: [
-      { tierLabel: "Regular (< $1M)", minVolume: 0, maxVolume: 1000000, takerFee: 0.1, makerFee: 0.1 },
-      { tierLabel: "VIP 1 ($1M-$2.5M)", minVolume: 1000000, maxVolume: 2500000, takerFee: 0.06, makerFee: 0.04 },
-    ],
-    manualFees: {
-      fiatDepositFee: "Free (bank transfer); 1-3.5% (card)",
-      fiatWithdrawalFee: "Varies by currency",
-    },
-  },
-  {
-    id: "okx",
-    name: "OKX",
-    country: "Seychelles",
-    israeliExchange: false,
-    tradingPair: "BTC/USDT",
-    fallbackPairs: ["BTC/USDC"],
-    feePageUrl: "https://www.okx.com/fees",
-    manualFeeTiers: [
-      { tierLabel: "Level 1 (< $5M)", minVolume: 0, maxVolume: 5000000, takerFee: 0.1, makerFee: 0.08 },
-      { tierLabel: "Level 2 ($5M-$10M)", minVolume: 5000000, maxVolume: 10000000, takerFee: 0.09, makerFee: 0.06 },
-    ],
-    manualFees: {
-      fiatDepositFee: "Free (bank transfer); 1-3.5% (card)",
-      fiatWithdrawalFee: "Varies by currency",
-    },
-  },
-  {
-    id: "bit2c",
-    name: "Bit2C",
-    country: "Israel",
-    israeliExchange: true,
-    tradingPair: "BTC/NIS",
-    fallbackPairs: [],
-    feePageUrl: "https://www.bit2c.co.il/home/Fees",
-    manualFeeTiers: [
-      { tierLabel: "Tier 1 (< 50K ILS)", minVolume: 0, maxVolume: 50000, takerFee: 0.5, makerFee: 0.5 },
-      { tierLabel: "Tier 2 (50K-200K ILS)", minVolume: 50000, maxVolume: 200000, takerFee: 0.45, makerFee: 0.45 },
-      { tierLabel: "Tier 3 (200K-600K ILS)", minVolume: 200000, maxVolume: 600000, takerFee: 0.4, makerFee: 0.4 },
-      { tierLabel: "Tier 4 (600K+ ILS)", minVolume: 600000, maxVolume: Infinity, takerFee: 0.25, makerFee: 0.25 },
-    ],
-    manualFees: {
-      fiatDepositFee: "Free (bank transfer)",
-      fiatWithdrawalFee: "Free (bank transfer)",
-      withdrawalFeeBTC: 0.0001,
-    },
-  },
-  {
-    id: "bitsofgold",
-    name: "Bits of Gold",
-    country: "Israel",
-    israeliExchange: true,
-    tradingPair: "BTC/ILS",
-    fallbackPairs: [],
-    feePageUrl: "https://www.bitsofgold.co.il/fees",
-    manualOnly: true,
-    manualFeeTiers: [
-      { tierLabel: "Standard", minVolume: 0, maxVolume: Infinity, takerFee: 0.5, makerFee: 0.5 },
-    ],
-    manualFees: {
-      takerFee: 0.5,
-      makerFee: 0.5,
-      withdrawalFeeBTC: 0.0005,
-      fiatDepositFee: "Bank transfer: free; Credit card: 2.5%",
-      fiatWithdrawalFee: "Bank transfer: free",
-    },
-  },
-];
+/**
+ * Discovers all CCXT exchanges that potentially support BTC trading.
+ * Results are cached for 1 hour.
+ */
+function discoverExchanges(): DiscoveredExchange[] {
+  const cacheKey = "ccxt:discovery";
+  const cached = exchangeCache.get<DiscoveredExchange[]>(cacheKey, DISCOVERY_TTL_MS);
+  if (cached) return cached;
+
+  const discovered: DiscoveredExchange[] = [];
+
+  for (const exchangeId of ccxt.exchanges) {
+    if (EXCHANGE_BLOCKLIST.has(exchangeId)) continue;
+
+    try {
+      const ExchangeClass = (ccxt as Record<string, unknown>)[exchangeId] as
+        | (new (config: Record<string, unknown>) => Exchange)
+        | undefined;
+      if (!ExchangeClass) continue;
+
+      // Create a temporary instance to check capabilities
+      const temp = new ExchangeClass({ enableRateLimit: true });
+
+      // Check if fetchTicker is available (public endpoint, no API key needed)
+      const hasFetchTicker = typeof temp.fetchTicker === "function" && temp.has?.fetchTicker !== false;
+      if (!hasFetchTicker) continue;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tempAny = temp as any;
+      discovered.push({
+        id: exchangeId,
+        name: tempAny.name as string || exchangeId,
+        countries: Array.isArray(tempAny.countries)
+          ? tempAny.countries as string[]
+          : [],
+        hasFetchTicker,
+      });
+    } catch {
+      // Skip exchanges that fail to instantiate
+    }
+  }
+
+  exchangeCache.set(cacheKey, discovered);
+  return discovered;
+}
 
 // ─── CCXT Instance Management ────────────────────────────────────────
 
 const exchangeInstances = new Map<string, Exchange>();
 
 function getExchangeInstance(id: string): Exchange | null {
-  if (id === "bitsofgold") return null;
-
   if (exchangeInstances.has(id)) {
     return exchangeInstances.get(id)!;
   }
@@ -185,12 +115,11 @@ function getExchangeInstance(id: string): Exchange | null {
 
     const instance = new ExchangeClass({
       enableRateLimit: true,
-      timeout: 10000,
+      timeout: EXCHANGE_TIMEOUT_MS,
     });
     exchangeInstances.set(id, instance);
     return instance;
   } catch {
-    console.error(`[ccxt-service] Failed to create CCXT instance for ${id}`);
     return null;
   }
 }
@@ -199,17 +128,27 @@ function getExchangeInstance(id: string): Exchange | null {
 
 async function fetchTickerPrice(
   exchange: Exchange,
-  config: ExchangeConfig
+  exchangeId: string,
+  preferredPair?: string,
+  fallbackPairs?: string[]
 ): Promise<{ price: number; pair: string } | null> {
-  const cacheKey = `ccxt:price:${config.id}`;
+  const cacheKey = `ccxt:price:${exchangeId}`;
   const cached = exchangeCache.get<{ price: number; pair: string }>(cacheKey, PRICE_TTL_MS);
   if (cached) return cached;
 
-  const pairs = [config.tradingPair, ...config.fallbackPairs];
+  // Build pairs list: preferred first, then fallbacks, then defaults
+  const pairs: string[] = [];
+  if (preferredPair) pairs.push(preferredPair);
+  if (fallbackPairs) pairs.push(...fallbackPairs);
+  // Add common BTC pairs as last resort for dynamically discovered exchanges
+  for (const p of BTC_PAIRS) {
+    if (!pairs.includes(p)) pairs.push(p);
+  }
+
   for (const pair of pairs) {
     try {
       const ticker = await exchange.fetchTicker(pair);
-      if (ticker.last != null) {
+      if (ticker.last != null && ticker.last > 0) {
         const result = { price: ticker.last, pair };
         exchangeCache.set(cacheKey, result);
         return result;
@@ -225,14 +164,16 @@ async function fetchTickerPrice(
 
 async function fetchOrderBookData(
   exchange: Exchange,
-  config: ExchangeConfig,
+  exchangeId: string,
   activePair: string
 ): Promise<OrderBookData | null> {
-  const cacheKey = `ccxt:orderbook:${config.id}`;
+  const cacheKey = `ccxt:orderbook:${exchangeId}`;
   const cached = exchangeCache.get<OrderBookData>(cacheKey, ORDERBOOK_TTL_MS);
   if (cached) return cached;
 
   try {
+    if (!exchange.has?.fetchOrderBook) return null;
+
     const ob = await exchange.fetchOrderBook(activePair, 10);
     if (!ob.bids.length || !ob.asks.length) return null;
 
@@ -268,16 +209,18 @@ async function fetchOrderBookData(
 
 function extractFees(
   exchange: Exchange | null,
-  config: ExchangeConfig
+  featuredConfig?: FeaturedExchangeConfig
 ): CcxtFeeData {
-  const cacheKey = `ccxt:fees:${config.id}`;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const exchangeId = featuredConfig?.id || (exchange as any)?.id as string || "unknown";
+  const cacheKey = `ccxt:fees:${exchangeId}`;
   const cached = exchangeCache.get<CcxtFeeData>(cacheKey, FEE_TTL_MS);
   if (cached) return cached;
 
-  // Start with manual/default values
-  let takerFee = config.manualFees?.takerFee ?? 0.1;
-  let makerFee = config.manualFees?.makerFee ?? 0.1;
-  let withdrawalFeeBTC = config.manualFees?.withdrawalFeeBTC ?? null;
+  // Start with defaults
+  let takerFee = featuredConfig?.manualFees?.takerFee ?? 0.1;
+  let makerFee = featuredConfig?.manualFees?.makerFee ?? 0.1;
+  let withdrawalFeeBTC = featuredConfig?.manualFees?.withdrawalFeeBTC ?? null;
 
   // Try to get fees from CCXT exchange.fees object
   if (exchange) {
@@ -286,7 +229,6 @@ function extractFees(
         const tradingFees = (exchange.fees as Record<string, unknown>)
           .trading as Record<string, unknown> | undefined;
         if (tradingFees) {
-          // CCXT returns fees as decimals (0.001 = 0.1%), convert to percent
           if (typeof tradingFees.taker === "number") {
             takerFee = tradingFees.taker * 100;
           }
@@ -295,43 +237,150 @@ function extractFees(
           }
         }
       }
-      // Try to get BTC withdrawal fee from currencies
       if (exchange.currencies?.["BTC"]?.fee != null) {
         withdrawalFeeBTC = exchange.currencies["BTC"].fee as number;
       }
     } catch {
-      // Fall through to manual values
+      // Fall through to defaults
     }
   }
 
-  // Manual overrides take precedence (they're more accurate for specific tiers)
-  if (config.manualFees?.takerFee != null) takerFee = config.manualFees.takerFee;
-  if (config.manualFees?.makerFee != null) makerFee = config.manualFees.makerFee;
-  if (config.manualFees?.withdrawalFeeBTC != null) {
-    withdrawalFeeBTC = config.manualFees.withdrawalFeeBTC;
+  // Manual overrides take precedence for featured exchanges
+  if (featuredConfig?.manualFees?.takerFee != null) takerFee = featuredConfig.manualFees.takerFee;
+  if (featuredConfig?.manualFees?.makerFee != null) makerFee = featuredConfig.manualFees.makerFee;
+  if (featuredConfig?.manualFees?.withdrawalFeeBTC != null) {
+    withdrawalFeeBTC = featuredConfig.manualFees.withdrawalFeeBTC;
   }
 
   const fees: CcxtFeeData = {
     takerFee,
     makerFee,
     withdrawalFeeBTC,
-    fiatDepositFee: config.manualFees?.fiatDepositFee ?? "Varies",
-    fiatWithdrawalFee: config.manualFees?.fiatWithdrawalFee ?? "Varies",
-    feeTiers: config.manualFeeTiers ?? [],
+    fiatDepositFee: featuredConfig?.manualFees?.fiatDepositFee ?? "Varies",
+    fiatWithdrawalFee: featuredConfig?.manualFees?.fiatWithdrawalFee ?? "Varies",
+    feeTiers: featuredConfig?.manualFeeTiers ?? [],
   };
 
   exchangeCache.set(cacheKey, fees);
   return fees;
 }
 
+// ─── Single Exchange Fetch ──────────────────────────────────────────
+
+async function fetchExchangeData(
+  discovered: DiscoveredExchange
+): Promise<CcxtExchangeData> {
+  const featuredConfig = getFeaturedConfig(discovered.id);
+  const isFeatured = !!featuredConfig;
+
+  // Manual-only exchanges (e.g., Bits of Gold)
+  if (featuredConfig?.manualOnly) {
+    return getBitsOfGoldData();
+  }
+
+  const exchange = getExchangeInstance(discovered.id);
+  if (!exchange) {
+    exchangeHealth.recordFailure(discovered.id, "Could not create CCXT instance");
+    return buildErrorResult(discovered, featuredConfig, "Exchange not available in CCXT");
+  }
+
+  try {
+    // Load markets (cached for 1hr)
+    const marketsKey = `ccxt:markets:${discovered.id}`;
+    if (!exchangeCache.get(marketsKey, FEE_TTL_MS)) {
+      await exchange.loadMarkets();
+      exchangeCache.set(marketsKey, true);
+    }
+
+    // Fetch ticker price
+    const tickerResult = await fetchTickerPrice(
+      exchange,
+      discovered.id,
+      featuredConfig?.tradingPair,
+      featuredConfig?.fallbackPairs
+    );
+
+    if (!tickerResult) {
+      exchangeHealth.recordFailure(discovered.id, "No BTC pair found or price unavailable");
+      return buildErrorResult(discovered, featuredConfig, "No BTC trading pair found");
+    }
+
+    const activePair = tickerResult.pair;
+
+    // Fetch order book (best effort, don't fail if unavailable)
+    const orderBookResult = await fetchOrderBookData(exchange, discovered.id, activePair);
+
+    // Extract fees
+    const fees = extractFees(exchange, featuredConfig);
+
+    exchangeHealth.recordSuccess(discovered.id);
+
+    return {
+      id: discovered.id,
+      name: featuredConfig?.name ?? discovered.name,
+      country: featuredConfig?.country ?? formatCountry(discovered.countries),
+      region: featuredConfig?.region ?? detectRegion(discovered.countries),
+      israeliExchange: featuredConfig?.israeliExchange ?? false,
+      featured: isFeatured,
+      price: tickerResult.price,
+      tradingPair: activePair,
+      fees,
+      orderBook: orderBookResult,
+      feePageUrl: featuredConfig?.feePageUrl ?? "",
+      websiteUrl: featuredConfig?.websiteUrl ?? `https://${discovered.id}.com`,
+      affiliateUrl: featuredConfig?.affiliateUrl,
+      logoUrl: featuredConfig?.logoUrl,
+      fetchedAt: new Date().toISOString(),
+      status: "ok",
+      healthStatus: exchangeHealth.getHealthStatus(discovered.id),
+      consecutiveFailures: 0,
+    };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : "Unknown error";
+    exchangeHealth.recordFailure(discovered.id, errorMsg);
+    return buildErrorResult(discovered, featuredConfig, errorMsg);
+  }
+}
+
+function buildErrorResult(
+  discovered: DiscoveredExchange,
+  featuredConfig: FeaturedExchangeConfig | undefined,
+  error: string
+): CcxtExchangeData {
+  return {
+    id: discovered.id,
+    name: featuredConfig?.name ?? discovered.name,
+    country: featuredConfig?.country ?? formatCountry(discovered.countries),
+    region: featuredConfig?.region ?? detectRegion(discovered.countries),
+    israeliExchange: featuredConfig?.israeliExchange ?? false,
+    featured: !!featuredConfig,
+    price: null,
+    tradingPair: featuredConfig?.tradingPair ?? "BTC/USDT",
+    fees: extractFees(null, featuredConfig),
+    orderBook: null,
+    feePageUrl: featuredConfig?.feePageUrl ?? "",
+    websiteUrl: featuredConfig?.websiteUrl ?? `https://${discovered.id}.com`,
+    affiliateUrl: featuredConfig?.affiliateUrl,
+    logoUrl: featuredConfig?.logoUrl,
+    fetchedAt: new Date().toISOString(),
+    status: "error",
+    healthStatus: exchangeHealth.getHealthStatus(discovered.id),
+    consecutiveFailures: exchangeHealth.getConsecutiveFailures(discovered.id),
+    error,
+  };
+}
+
 // ─── Bits of Gold (Manual Only) ──────────────────────────────────────
 
 function getBitsOfGoldData(): CcxtExchangeData {
+  const config = getFeaturedConfig("bitsofgold")!;
   return {
     id: "bitsofgold",
     name: "Bits of Gold",
     country: "Israel",
+    region: "Israel",
     israeliExchange: true,
+    featured: true,
     price: null,
     tradingPair: "BTC/ILS",
     fees: {
@@ -341,130 +390,113 @@ function getBitsOfGoldData(): CcxtExchangeData {
       fiatDepositFee: "Bank transfer: free; Credit card: 2.5%",
       fiatWithdrawalFee: "Bank transfer: free",
       feeTiers: [
-        {
-          tierLabel: "Standard",
-          minVolume: 0,
-          maxVolume: Infinity,
-          takerFee: 0.5,
-          makerFee: 0.5,
-        },
+        { tierLabel: "Standard", minVolume: 0, maxVolume: Infinity, takerFee: 0.5, makerFee: 0.5 },
       ],
     },
     orderBook: null,
-    feePageUrl: "https://www.bitsofgold.co.il/fees",
+    feePageUrl: config.feePageUrl,
+    websiteUrl: config.websiteUrl,
+    affiliateUrl: config.affiliateUrl,
+    logoUrl: config.logoUrl,
     fetchedAt: new Date().toISOString(),
     status: "ok",
+    healthStatus: "healthy",
+    consecutiveFailures: 0,
   };
 }
 
-// ─── Main Data Fetch ─────────────────────────────────────────────────
+// ─── Batched Fetching ───────────────────────────────────────────────
 
-export async function fetchAllCcxtData(): Promise<CcxtExchangeData[]> {
-  const results = await Promise.allSettled(
-    EXCHANGE_CONFIGS.map(async (config): Promise<CcxtExchangeData> => {
-      // Bits of Gold: no CCXT support, manual data only
-      if (config.manualOnly) {
-        return getBitsOfGoldData();
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Fetches exchange data in batches to avoid overwhelming APIs.
+ * Featured exchanges are always fetched first.
+ */
+async function fetchBatched(
+  exchanges: DiscoveredExchange[]
+): Promise<CcxtExchangeData[]> {
+  const results: CcxtExchangeData[] = [];
+
+  // Sort: featured first, then alphabetically
+  const sorted = [...exchanges].sort((a, b) => {
+    const aFeatured = isFeaturedExchange(a.id);
+    const bFeatured = isFeaturedExchange(b.id);
+    if (aFeatured && !bFeatured) return -1;
+    if (!aFeatured && bFeatured) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Process in batches
+  for (let i = 0; i < sorted.length; i += BATCH_SIZE) {
+    const batch = sorted.slice(i, i + BATCH_SIZE);
+
+    const batchResults = await Promise.allSettled(
+      batch.map((ex) => fetchExchangeData(ex))
+    );
+
+    for (const result of batchResults) {
+      if (result.status === "fulfilled") {
+        results.push(result.value);
       }
+      // Rejected promises are silently dropped (shouldn't happen since fetchExchangeData catches)
+    }
 
-      const exchange = getExchangeInstance(config.id);
-      if (!exchange) {
-        return {
-          id: config.id,
-          name: config.name,
-          country: config.country,
-          israeliExchange: config.israeliExchange,
-          price: null,
-          tradingPair: config.tradingPair,
-          fees: extractFees(null, config),
-          orderBook: null,
-          feePageUrl: config.feePageUrl,
-          fetchedAt: new Date().toISOString(),
-          status: "error",
-          error: "Exchange not available in CCXT",
-        };
-      }
+    // Delay between batches (except for the last one)
+    if (i + BATCH_SIZE < sorted.length) {
+      await sleep(BATCH_DELAY_MS);
+    }
+  }
 
-      try {
-        // Load markets once (cached for 1hr)
-        const marketsKey = `ccxt:markets:${config.id}`;
-        if (!exchangeCache.get(marketsKey, FEE_TTL_MS)) {
-          await exchange.loadMarkets();
-          exchangeCache.set(marketsKey, true);
-        }
+  return results;
+}
 
-        // Fetch ticker price
-        const tickerResult = await fetchTickerPrice(exchange, config);
-        const activePair = tickerResult?.pair ?? config.tradingPair;
+// ─── Main API: Fetch All Exchange Data ──────────────────────────────
 
-        // Fetch order book
-        const orderBookResult = await fetchOrderBookData(
-          exchange,
-          config,
-          activePair
-        );
+/**
+ * Main entry point: discovers all CCXT exchanges, filters to those with BTC pairs,
+ * fetches prices in batches, and returns the combined data.
+ *
+ * Results are a mix of cached and fresh data depending on TTLs.
+ */
+export async function fetchAllCcxtData(): Promise<{
+  exchanges: CcxtExchangeData[];
+  totalDiscovered: number;
+}> {
+  // Check for a full cached result first
+  const fullCacheKey = "ccxt:allData";
+  const fullCached = exchangeCache.get<{
+    exchanges: CcxtExchangeData[];
+    totalDiscovered: number;
+  }>(fullCacheKey, PRICE_TTL_MS);
+  if (fullCached) return fullCached;
 
-        // Extract fees
-        const fees = extractFees(exchange, config);
+  // Discover all available exchanges
+  const discovered = discoverExchanges();
 
-        return {
-          id: config.id,
-          name: config.name,
-          country: config.country,
-          israeliExchange: config.israeliExchange,
-          price: tickerResult?.price ?? null,
-          tradingPair: activePair,
-          fees,
-          orderBook: orderBookResult,
-          feePageUrl: config.feePageUrl,
-          fetchedAt: new Date().toISOString(),
-          status: tickerResult ? "ok" : "error",
-          error: tickerResult ? undefined : "Failed to fetch price",
-        };
-      } catch (err) {
-        return {
-          id: config.id,
-          name: config.name,
-          country: config.country,
-          israeliExchange: config.israeliExchange,
-          price: null,
-          tradingPair: config.tradingPair,
-          fees: extractFees(null, config),
-          orderBook: null,
-          feePageUrl: config.feePageUrl,
-          fetchedAt: new Date().toISOString(),
-          status: "error",
-          error: err instanceof Error ? err.message : "Unknown error",
-        };
-      }
-    })
+  // Filter out exchanges that have been down too long
+  // (but always include featured exchanges even if degraded)
+  const toFetch = discovered.filter(
+    (ex) => isFeaturedExchange(ex.id) || !exchangeHealth.shouldHide(ex.id)
   );
 
-  return results.map((r) =>
-    r.status === "fulfilled"
-      ? r.value
-      : {
-          id: "unknown",
-          name: "Unknown",
-          country: "Unknown",
-          israeliExchange: false,
-          price: null,
-          tradingPair: "BTC/USDT",
-          fees: {
-            takerFee: 0,
-            makerFee: 0,
-            withdrawalFeeBTC: null,
-            fiatDepositFee: "Unknown",
-            fiatWithdrawalFee: "Unknown",
-            feeTiers: [],
-          },
-          orderBook: null,
-          feePageUrl: "",
-          fetchedAt: new Date().toISOString(),
-          status: "error" as const,
-          error: "Promise rejected",
-        }
-  );
+  // Fetch all exchange data in batches
+  const results = await fetchBatched(toFetch);
+
+  // Sort: featured first, then by status (ok first), then alphabetically
+  results.sort((a, b) => {
+    if (a.featured && !b.featured) return -1;
+    if (!a.featured && b.featured) return 1;
+    if (a.status === "ok" && b.status !== "ok") return -1;
+    if (a.status !== "ok" && b.status === "ok") return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const output = { exchanges: results, totalDiscovered: discovered.length };
+  exchangeCache.set(fullCacheKey, output);
+  return output;
 }
 
 /**
@@ -474,23 +506,31 @@ export async function fetchAllCcxtData(): Promise<CcxtExchangeData[]> {
 export async function fetchCcxtPrice(
   exchangeId: string
 ): Promise<{ price: number; pair: string } | null> {
-  const config = EXCHANGE_CONFIGS.find((c) => c.id === exchangeId);
-  if (!config || config.manualOnly) return null;
+  const featuredConfig = getFeaturedConfig(exchangeId);
+  if (featuredConfig?.manualOnly) return null;
 
-  const exchange = getExchangeInstance(config.id);
+  const exchange = getExchangeInstance(exchangeId);
   if (!exchange) return null;
 
   try {
-    const marketsKey = `ccxt:markets:${config.id}`;
+    const marketsKey = `ccxt:markets:${exchangeId}`;
     if (!exchangeCache.get(marketsKey, FEE_TTL_MS)) {
       await exchange.loadMarkets();
       exchangeCache.set(marketsKey, true);
     }
-    return await fetchTickerPrice(exchange, config);
+    return await fetchTickerPrice(
+      exchange,
+      exchangeId,
+      featuredConfig?.tradingPair,
+      featuredConfig?.fallbackPairs
+    );
   } catch {
     return null;
   }
 }
 
-export { EXCHANGE_CONFIGS };
-export type { ExchangeConfig };
+// ─── Exports for backward compatibility ──────────────────────────────
+
+export { FEATURED_EXCHANGES as EXCHANGE_CONFIGS };
+export type { FeaturedExchangeConfig as ExchangeConfig };
+export { discoverExchanges };

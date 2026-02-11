@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   ComparisonResult,
   ComparisonResponse,
@@ -7,12 +7,14 @@ import {
   CcxtApiResponse,
   Currency,
   DepositMethod,
+  ExchangeRegion,
 } from "@/types";
 import { AmountInput } from "./AmountInput";
 import { ComparisonTable } from "./ComparisonTable";
 import { ExchangeCardView } from "./ExchangeCardView";
 import { CcxtComparisonTable } from "./CcxtComparisonTable";
 import { FeeSummaryBar } from "./FeeSummaryBar";
+import { ExchangeFilters, SortOption } from "./ExchangeFilters";
 import {
   TrendingUp,
   RefreshCw,
@@ -20,6 +22,7 @@ import {
   LayoutGrid,
   List,
   Table2,
+  Loader2,
 } from "lucide-react";
 
 const CS: Record<string, string> = {
@@ -28,6 +31,8 @@ const CS: Record<string, string> = {
   ILS: "\u20AA",
   GBP: "\u00A3",
 };
+
+const ITEMS_PER_PAGE = 20;
 
 type ViewMode = "list" | "cards" | "table";
 
@@ -38,10 +43,19 @@ export function ComparisonDashboard() {
     useState<DepositMethod>("bank_transfer");
   const [results, setResults] = useState<ComparisonResult[]>([]);
   const [ccxtData, setCcxtData] = useState<CcxtExchangeData[]>([]);
+  const [totalDiscovered, setTotalDiscovered] = useState(0);
+  const [totalResponsive, setTotalResponsive] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState<ExchangeRegion | "All">("All");
+  const [sortBy, setSortBy] = useState<SortOption>("best_price");
+  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (amount <= 0) return;
@@ -76,7 +90,8 @@ export function ComparisonDashboard() {
       if (ccxtRes.status === "fulfilled" && ccxtRes.value.ok) {
         const data: CcxtApiResponse = await ccxtRes.value.json();
         setCcxtData(data.exchanges);
-        // If comparison failed but CCXT succeeded, still update timestamp
+        setTotalDiscovered(data.totalDiscovered);
+        setTotalResponsive(data.totalResponsive);
         if (
           compareRes.status !== "fulfilled" ||
           !compareRes.value.ok
@@ -110,6 +125,93 @@ export function ComparisonDashboard() {
     return () => clearInterval(i);
   }, [fetchData]);
 
+  // ─── Filtering & Sorting Logic ─────────────────────────────────────
+
+  const filteredCcxtData = useMemo(() => {
+    let filtered = [...ccxtData];
+
+    // Featured only filter
+    if (showFeaturedOnly) {
+      filtered = filtered.filter((e) => e.featured);
+    }
+
+    // Only show exchanges with OK status (hide errored ones unless featured)
+    filtered = filtered.filter((e) => e.status === "ok" || e.featured);
+
+    // Region filter
+    if (selectedRegion !== "All") {
+      filtered = filtered.filter((e) => e.region === selectedRegion);
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (e) =>
+          e.name.toLowerCase().includes(q) ||
+          e.id.toLowerCase().includes(q) ||
+          e.country.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort
+    switch (sortBy) {
+      case "best_price":
+        filtered.sort((a, b) => {
+          // Featured first
+          if (a.featured && !b.featured) return -1;
+          if (!a.featured && b.featured) return 1;
+          // Then by price (ascending, nulls last)
+          if (a.price == null && b.price == null) return 0;
+          if (a.price == null) return 1;
+          if (b.price == null) return -1;
+          return a.price - b.price;
+        });
+        break;
+      case "lowest_fees":
+        filtered.sort((a, b) => {
+          if (a.featured && !b.featured) return -1;
+          if (!a.featured && b.featured) return 1;
+          const costA = a.fees.takerFee + (a.orderBook?.spreadPercent ?? 0);
+          const costB = b.fees.takerFee + (b.orderBook?.spreadPercent ?? 0);
+          return costA - costB;
+        });
+        break;
+      case "highest_volume":
+        filtered.sort((a, b) => {
+          if (a.featured && !b.featured) return -1;
+          if (!a.featured && b.featured) return 1;
+          const depthA = a.orderBook
+            ? a.orderBook.bidDepth + a.orderBook.askDepth
+            : 0;
+          const depthB = b.orderBook
+            ? b.orderBook.bidDepth + b.orderBook.askDepth
+            : 0;
+          return depthB - depthA;
+        });
+        break;
+      case "alphabetical":
+        filtered.sort((a, b) => {
+          if (a.featured && !b.featured) return -1;
+          if (!a.featured && b.featured) return 1;
+          return a.name.localeCompare(b.name);
+        });
+        break;
+    }
+
+    return filtered;
+  }, [ccxtData, searchQuery, selectedRegion, sortBy, showFeaturedOnly]);
+
+  // Pagination
+  const displayedExchanges = useMemo(() => {
+    if (showAll || filteredCcxtData.length <= ITEMS_PER_PAGE) {
+      return filteredCcxtData;
+    }
+    return filteredCcxtData.slice(0, ITEMS_PER_PAGE);
+  }, [filteredCcxtData, showAll]);
+
+  const hasMore = filteredCcxtData.length > ITEMS_PER_PAGE && !showAll;
+
   const savings =
     results.length > 1
       ? results[results.length - 1].totalCostDollar -
@@ -129,8 +231,11 @@ export function ComparisonDashboard() {
           <span className="text-gold">Across Exchanges</span>
         </h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Find the cheapest way to buy Bitcoin. Real-time comparison across
-          7 exchanges with live CCXT data.
+          Find the cheapest way to buy Bitcoin. Real-time comparison across{" "}
+          {totalResponsive > 0
+            ? `${totalResponsive}+ exchanges`
+            : "all major exchanges"}{" "}
+          with live CCXT data.
         </p>
       </div>
 
@@ -189,6 +294,11 @@ export function ComparisonDashboard() {
               CCXT Live
             </span>
           )}
+          {totalDiscovered > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded bg-muted text-[10px]">
+              {totalResponsive}/{totalDiscovered} responding
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {/* View mode toggle */}
@@ -239,6 +349,33 @@ export function ComparisonDashboard() {
         </div>
       )}
 
+      {/* Exchange Filters (shown for CCXT views) */}
+      {hasCcxtData && viewMode !== "list" && (
+        <div className="max-w-6xl mx-auto">
+          <ExchangeFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedRegion={selectedRegion}
+            onRegionChange={setSelectedRegion}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            showFeaturedOnly={showFeaturedOnly}
+            onToggleFeatured={() => setShowFeaturedOnly(!showFeaturedOnly)}
+            totalExchanges={ccxtData.length}
+            visibleExchanges={filteredCcxtData.length}
+            responsiveExchanges={totalResponsive}
+          />
+        </div>
+      )}
+
+      {/* Loading indicator for initial load */}
+      {isLoading && ccxtData.length === 0 && (
+        <div className="max-w-6xl mx-auto flex items-center justify-center py-12 gap-3 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Fetching prices from exchanges...</span>
+        </div>
+      )}
+
       {/* Main content area */}
       <div className="max-w-6xl mx-auto">
         {viewMode === "list" && (
@@ -251,11 +388,11 @@ export function ComparisonDashboard() {
         )}
         {viewMode === "cards" && hasCcxtData && (
           <ExchangeCardView
-            exchanges={ccxtData}
+            exchanges={displayedExchanges}
             investmentAmount={amount}
           />
         )}
-        {viewMode === "cards" && !hasCcxtData && (
+        {viewMode === "cards" && !hasCcxtData && !isLoading && (
           <ComparisonTable
             results={results}
             currency={currency}
@@ -265,11 +402,11 @@ export function ComparisonDashboard() {
         )}
         {viewMode === "table" && hasCcxtData && (
           <CcxtComparisonTable
-            exchanges={ccxtData}
+            exchanges={displayedExchanges}
             investmentAmount={amount}
           />
         )}
-        {viewMode === "table" && !hasCcxtData && (
+        {viewMode === "table" && !hasCcxtData && !isLoading && (
           <ComparisonTable
             results={results}
             currency={currency}
@@ -279,11 +416,36 @@ export function ComparisonDashboard() {
         )}
       </div>
 
+      {/* Show More / Show Less button */}
+      {hasCcxtData && viewMode !== "list" && (
+        <div className="max-w-6xl mx-auto text-center">
+          {hasMore && (
+            <button
+              onClick={() => setShowAll(true)}
+              className="px-6 py-2.5 rounded-lg text-sm font-medium bg-muted text-foreground border border-border hover:border-gold/30 transition-all"
+            >
+              Show All {filteredCcxtData.length} Exchanges
+              <span className="text-xs text-muted-foreground ml-2">
+                (showing top {ITEMS_PER_PAGE})
+              </span>
+            </button>
+          )}
+          {showAll && filteredCcxtData.length > ITEMS_PER_PAGE && (
+            <button
+              onClick={() => setShowAll(false)}
+              className="px-6 py-2.5 rounded-lg text-sm font-medium bg-muted text-foreground border border-border hover:border-gold/30 transition-all"
+            >
+              Show Top {ITEMS_PER_PAGE} Only
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Data source attribution */}
       <div className="max-w-6xl mx-auto text-center">
         <p className="text-xs text-muted-foreground/60">
           {hasCcxtData
-            ? "Live prices from CCXT (exchange APIs). Fee data verified against exchange fee pages. CoinGecko as fallback."
+            ? `Live prices from CCXT across ${totalResponsive} exchanges. Fee data verified for featured exchanges. CoinGecko as fallback.`
             : "Prices from CoinGecko. Fee data may vary."}{" "}
           Not financial advice.
         </p>

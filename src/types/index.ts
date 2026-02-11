@@ -120,24 +120,41 @@ export interface OrderBookData {
   askDepth: number;             // total BTC in top 10 ask levels
 }
 
+export type ExchangeRegion = "Global" | "Americas" | "Europe" | "Asia" | "Israel" | "Other";
+
+export type ExchangeHealthStatus = "healthy" | "degraded" | "down" | "unknown";
+
 export interface CcxtExchangeData {
   id: string;
   name: string;
   country: string;
+  region: ExchangeRegion;
   israeliExchange: boolean;
+  featured: boolean;
   price: number | null;
   tradingPair: string;
   fees: CcxtFeeData;
   orderBook: OrderBookData | null;
   feePageUrl: string;
+  websiteUrl: string;
+  affiliateUrl?: string;
+  logoUrl?: string;
   fetchedAt: string;
   status: "ok" | "error";
+  healthStatus: ExchangeHealthStatus;
+  consecutiveFailures: number;
   error?: string;
 }
 
 export interface CcxtApiResponse {
   exchanges: CcxtExchangeData[];
   timestamp: string;
+  totalDiscovered: number;
+  totalResponsive: number;
+  fetchProgress?: {
+    completed: number;
+    total: number;
+  };
   cache: {
     pricesCachedAt: string | null;
     feesCachedAt: string | null;
