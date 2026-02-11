@@ -91,3 +91,57 @@ export interface Article {
   readTime: number;
   keywords: string[];
 }
+
+// ─── CCXT Integration Types ──────────────────────────────────────────
+
+export interface FeeTier {
+  tierLabel: string;
+  minVolume: number;
+  maxVolume: number;
+  takerFee: number;
+  makerFee: number;
+}
+
+export interface CcxtFeeData {
+  takerFee: number;             // percent, e.g. 0.1 means 0.1%
+  makerFee: number;             // percent
+  withdrawalFeeBTC: number | null;
+  fiatDepositFee: string;       // human-readable description
+  fiatWithdrawalFee: string;    // human-readable description
+  feeTiers: FeeTier[];
+}
+
+export interface OrderBookData {
+  bestBid: number;
+  bestAsk: number;
+  spreadUSD: number;
+  spreadPercent: number;
+  bidDepth: number;             // total BTC in top 10 bid levels
+  askDepth: number;             // total BTC in top 10 ask levels
+}
+
+export interface CcxtExchangeData {
+  id: string;
+  name: string;
+  country: string;
+  israeliExchange: boolean;
+  price: number | null;
+  tradingPair: string;
+  fees: CcxtFeeData;
+  orderBook: OrderBookData | null;
+  feePageUrl: string;
+  fetchedAt: string;
+  status: "ok" | "error";
+  error?: string;
+}
+
+export interface CcxtApiResponse {
+  exchanges: CcxtExchangeData[];
+  timestamp: string;
+  cache: {
+    pricesCachedAt: string | null;
+    feesCachedAt: string | null;
+    pricesTTL: number;
+    feesTTL: number;
+  };
+}
