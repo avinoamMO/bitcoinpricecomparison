@@ -172,16 +172,6 @@ export function ComparisonDashboard() {
     return () => clearInterval(i);
   }, [fetchData]);
 
-  // ─── Available Countries (derived from exchange data) ──────────────
-
-  const availableCountries = useMemo(() => {
-    const countrySet = new Set<string>();
-    for (const ex of exchangeData) {
-      if (ex.country) countrySet.add(ex.country);
-    }
-    return Array.from(countrySet).sort();
-  }, [exchangeData]);
-
   // ─── Exchange Selection Helpers ───────────────────────────────────
 
   const toggleExchange = useCallback((exchangeId: string) => {
@@ -384,6 +374,10 @@ export function ComparisonDashboard() {
             onAmountChange={setAmount}
             onCurrencyChange={handleCurrencyChange}
             onDepositMethodChange={handleDepositMethodChange}
+            selectedRegion={selectedRegion}
+            onRegionChange={handleRegionChange}
+            selectedCountry={selectedCountry}
+            onCountryChange={setSelectedCountry}
           />
         </div>
       </div>
@@ -495,8 +489,6 @@ export function ComparisonDashboard() {
           <ExchangeFilters
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            selectedRegion={selectedRegion}
-            onRegionChange={handleRegionChange}
             cexDexFilter={cexDexFilter}
             onCexDexFilterChange={handleCexDexChange}
             currencyPairFilter={currencyPairFilter}
@@ -505,9 +497,6 @@ export function ComparisonDashboard() {
             onPlatformTypeFilterChange={handlePlatformTypeChange}
             depositMethodFilter={depositMethodFilter}
             onDepositMethodFilterChange={handleDepositMethodFilterChange}
-            selectedCountry={selectedCountry}
-            onCountryChange={setSelectedCountry}
-            availableCountries={availableCountries}
             sortBy={sortBy}
             onSortChange={setSortBy}
             showFeaturedOnly={showFeaturedOnly}

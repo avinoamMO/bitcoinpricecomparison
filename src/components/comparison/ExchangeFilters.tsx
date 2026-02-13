@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ExchangeData, ExchangeRegion } from "@/types";
+import { ExchangeData } from "@/types";
 import { Search, Filter, ChevronDown, ChevronUp, Check, X } from "lucide-react";
 
 export type SortOption = "best_price" | "lowest_fees" | "alphabetical" | "highest_volume";
@@ -9,16 +9,6 @@ export type CexDexFilter = "all" | "cex" | "dex";
 export type CurrencyPairFilter = "usd" | "eur" | "all";
 export type PlatformTypeFilter = "all" | "exchange" | "broker";
 export type DepositMethodFilter = "all" | "bank_transfer" | "credit_card" | "crypto" | "cash_p2p";
-
-const REGIONS: { value: ExchangeRegion | "All"; label: string }[] = [
-  { value: "All", label: "All" },
-  { value: "Global", label: "Global" },
-  { value: "Americas", label: "Americas" },
-  { value: "Europe", label: "Europe" },
-  { value: "APAC", label: "APAC" },
-  { value: "MENA", label: "MENA" },
-  { value: "Israel", label: "Israel" },
-];
 
 const CEX_DEX_OPTIONS: { value: CexDexFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -56,8 +46,6 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 interface ExchangeFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  selectedRegion: ExchangeRegion | "All";
-  onRegionChange: (region: ExchangeRegion | "All") => void;
   cexDexFilter: CexDexFilter;
   onCexDexFilterChange: (filter: CexDexFilter) => void;
   currencyPairFilter: CurrencyPairFilter;
@@ -66,9 +54,6 @@ interface ExchangeFiltersProps {
   onPlatformTypeFilterChange: (filter: PlatformTypeFilter) => void;
   depositMethodFilter: DepositMethodFilter;
   onDepositMethodFilterChange: (filter: DepositMethodFilter) => void;
-  selectedCountry: string;
-  onCountryChange: (country: string) => void;
-  availableCountries: string[];
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
   showFeaturedOnly: boolean;
@@ -87,8 +72,6 @@ interface ExchangeFiltersProps {
 export function ExchangeFilters({
   searchQuery,
   onSearchChange,
-  selectedRegion,
-  onRegionChange,
   cexDexFilter,
   onCexDexFilterChange,
   currencyPairFilter,
@@ -97,9 +80,6 @@ export function ExchangeFilters({
   onPlatformTypeFilterChange,
   depositMethodFilter,
   onDepositMethodFilterChange,
-  selectedCountry,
-  onCountryChange,
-  availableCountries,
   sortBy,
   onSortChange,
   showFeaturedOnly,
@@ -149,7 +129,7 @@ export function ExchangeFilters({
         </button>
       </div>
 
-      {/* Search + Sort + Country row */}
+      {/* Search + Sort row */}
       <div className="flex flex-col sm:flex-row gap-3">
         {/* Search input */}
         <div className="relative flex-1">
@@ -163,21 +143,6 @@ export function ExchangeFilters({
             aria-label="Search exchanges"
           />
         </div>
-
-        {/* Country dropdown */}
-        <select
-          value={selectedCountry}
-          onChange={(e) => onCountryChange(e.target.value)}
-          className="h-9 px-3 bg-muted border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 appearance-none cursor-pointer"
-          aria-label="Filter by country"
-        >
-          <option value="All">All Countries</option>
-          {availableCountries.map((country) => (
-            <option key={country} value={country}>
-              {country}
-            </option>
-          ))}
-        </select>
 
         {/* Sort dropdown */}
         <div className="flex items-center gap-2">
@@ -197,24 +162,9 @@ export function ExchangeFilters({
         </div>
       </div>
 
-      {/* Region tabs + CEX/DEX filter + Platform Type filter */}
+      {/* CEX/DEX + Platform Type + Exchange picker */}
       <div className="flex flex-wrap gap-1.5">
-        {REGIONS.map((region) => (
-          <button
-            key={region.value}
-            onClick={() => onRegionChange(region.value)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              selectedRegion === region.value
-                ? "bg-gold/20 text-gold border border-gold/30"
-                : "bg-muted text-muted-foreground border border-border hover:border-gold/30"
-            }`}
-          >
-            {region.label}
-          </button>
-        ))}
-
         {/* CEX / DEX filter */}
-        <span className="mx-1 border-l border-border" />
         {CEX_DEX_OPTIONS.map((opt) => (
           <button
             key={opt.value}
@@ -388,7 +338,7 @@ export function ExchangeFilters({
                   </span>
                   <span className="truncate">{ex.name}</span>
                   {ex.featured && (
-                    <span className="text-[9px] text-gold">★</span>
+                    <span className="text-[9px] text-gold">&#9733;</span>
                   )}
                 </button>
               );

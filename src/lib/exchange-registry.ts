@@ -219,7 +219,7 @@ export const FEATURED_EXCHANGES: FeaturedExchangeConfig[] = [
  * Maps country codes (ISO 2-letter codes or country names) to regions.
  * Exchanges have a `.countries` array property.
  */
-const COUNTRY_TO_REGION: Record<string, ExchangeRegion> = {
+export const COUNTRY_TO_REGION: Record<string, ExchangeRegion> = {
   // Americas
   US: "Americas", CA: "Americas", BR: "Americas", MX: "Americas", AR: "Americas",
   CL: "Americas", CO: "Americas", VE: "Americas", PE: "Americas", PA: "Americas",
@@ -280,7 +280,7 @@ export function formatCountry(countryCodes: string[]): string {
   return `${COUNTRY_NAMES[countryCodes[0]] || countryCodes[0]} +${countryCodes.length - 1} more`;
 }
 
-const COUNTRY_NAMES: Record<string, string> = {
+export const COUNTRY_NAMES: Record<string, string> = {
   US: "United States", GB: "United Kingdom", DE: "Germany", FR: "France",
   JP: "Japan", KR: "South Korea", CN: "China", HK: "Hong Kong",
   SG: "Singapore", AU: "Australia", CA: "Canada", CH: "Switzerland",
