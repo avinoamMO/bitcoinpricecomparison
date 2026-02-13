@@ -335,22 +335,11 @@ export function ComparisonDashboard() {
 
   const hasMore = filteredExchanges.length > ITEMS_PER_PAGE && !showAll;
 
-  // Filter comparison results by geography (so list view also respects region/country)
+  // Filter comparison results by selected exchanges (so list view also respects picker)
   const filteredResults = useMemo(() => {
-    if (selectedRegion === "All" && selectedCountry === "All") return results;
-    // Build a lookup from exchange data for region/country info
-    const regionMap = new Map<string, { region: ExchangeRegion; country: string }>();
-    for (const ex of exchangeData) {
-      regionMap.set(ex.id, { region: ex.region, country: ex.country });
-    }
-    return results.filter((r) => {
-      const info = regionMap.get(r.exchangeId);
-      if (!info) return true; // keep if no region info available yet
-      if (selectedRegion !== "All" && info.region !== selectedRegion) return false;
-      if (selectedCountry !== "All" && info.country !== selectedCountry) return false;
-      return true;
-    });
-  }, [results, exchangeData, selectedRegion, selectedCountry]);
+    if (selectedExchangeIds.size === 0) return results;
+    return results.filter((r) => selectedExchangeIds.has(r.exchangeId));
+  }, [results, selectedExchangeIds]);
 
   const savings =
     filteredResults.length > 1
@@ -391,10 +380,11 @@ export function ComparisonDashboard() {
             onAmountChange={setAmount}
             onCurrencyChange={handleCurrencyChange}
             onDepositMethodChange={handleDepositMethodChange}
-            selectedRegion={selectedRegion}
-            onRegionChange={handleRegionChange}
-            selectedCountry={selectedCountry}
-            onCountryChange={setSelectedCountry}
+            exchanges={exchangeData.filter((e) => e.status === "ok" || e.featured)}
+            selectedExchangeIds={selectedExchangeIds}
+            onToggleExchange={toggleExchange}
+            onSelectAll={selectAllVisible}
+            onClearSelection={clearSelection}
           />
         </div>
       </div>
