@@ -335,10 +335,27 @@ export function ComparisonDashboard() {
 
   const hasMore = filteredExchanges.length > ITEMS_PER_PAGE && !showAll;
 
+  // Filter comparison results by geography (so list view also respects region/country)
+  const filteredResults = useMemo(() => {
+    if (selectedRegion === "All" && selectedCountry === "All") return results;
+    // Build a lookup from exchange data for region/country info
+    const regionMap = new Map<string, { region: ExchangeRegion; country: string }>();
+    for (const ex of exchangeData) {
+      regionMap.set(ex.id, { region: ex.region, country: ex.country });
+    }
+    return results.filter((r) => {
+      const info = regionMap.get(r.exchangeId);
+      if (!info) return true; // keep if no region info available yet
+      if (selectedRegion !== "All" && info.region !== selectedRegion) return false;
+      if (selectedCountry !== "All" && info.country !== selectedCountry) return false;
+      return true;
+    });
+  }, [results, exchangeData, selectedRegion, selectedCountry]);
+
   const savings =
-    results.length > 1
-      ? results[results.length - 1].totalCostDollar -
-        results[0].totalCostDollar
+    filteredResults.length > 1
+      ? filteredResults[filteredResults.length - 1].totalCostDollar -
+        filteredResults[0].totalCostDollar
       : 0;
   const sym = CS[currency] || "$";
 
@@ -529,7 +546,7 @@ export function ComparisonDashboard() {
       <div className="max-w-6xl mx-auto">
         {viewMode === "list" && (
           <ComparisonTable
-            results={results}
+            results={filteredResults}
             currency={currency}
             amount={amount}
             isLoading={isLoading}
@@ -543,7 +560,7 @@ export function ComparisonDashboard() {
         )}
         {viewMode === "cards" && !hasExchangeData && !isLoading && (
           <ComparisonTable
-            results={results}
+            results={filteredResults}
             currency={currency}
             amount={amount}
             isLoading={isLoading}
@@ -557,7 +574,7 @@ export function ComparisonDashboard() {
         )}
         {viewMode === "table" && !hasExchangeData && !isLoading && (
           <ComparisonTable
-            results={results}
+            results={filteredResults}
             currency={currency}
             amount={amount}
             isLoading={isLoading}
