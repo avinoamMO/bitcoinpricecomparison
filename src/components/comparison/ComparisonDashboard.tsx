@@ -57,8 +57,8 @@ export function ComparisonDashboard() {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState<ExchangeRegion | "All">("All");
-  const [selectedCountry, setSelectedCountry] = useState<string>("All");
+  const [selectedRegion] = useState<ExchangeRegion | "All">("All");
+  const [selectedCountry] = useState<string>("All");
   const [sortBy, setSortBy] = useState<SortOption>("best_price");
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -82,11 +82,6 @@ export function ComparisonDashboard() {
   const handleDepositMethodChange = useCallback((m: DepositMethod) => {
     setDepositMethod(m);
     trackFilterChange("deposit_method", m);
-  }, []);
-
-  const handleRegionChange = useCallback((r: ExchangeRegion | "All") => {
-    setSelectedRegion(r);
-    trackFilterChange("region", r);
   }, []);
 
   const handleCexDexChange = useCallback((f: CexDexFilter) => {
